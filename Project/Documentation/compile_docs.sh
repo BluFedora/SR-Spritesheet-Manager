@@ -1,0 +1,1 @@
+pandoc spritesheet_generator.md -o spritesheet_generator.pdf

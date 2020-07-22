@@ -1,0 +1,33 @@
+//
+// SR Spritesheet Manager
+//
+// file:   newanimation.hpp
+// author: Shareef Abdoul-Raheem
+// Copyright (c) 2020 Shareef Abdoul-Raheem
+//
+
+#ifndef NEWANIMATION_HPP
+#define NEWANIMATION_HPP
+
+#include "ui_newanimation.h"
+
+// clang-format off
+class NewAnimation : public QDialog, private Ui::NewAnimation
+// clang-format on
+{
+  Q_OBJECT
+
+ public:
+  explicit NewAnimation(QWidget *parent = nullptr);
+
+  QString name() const { return m_AnimName->text().trimmed(); }
+  int     frameRate() const { return m_Framerate->value(); }
+
+ protected:
+  void changeEvent(QEvent *e);
+
+ private slots:
+  void on_m_AnimName_textChanged(const QString &text);
+};
+
+#endif  // NEWANIMATION_HPP

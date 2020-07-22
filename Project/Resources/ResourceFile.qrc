@@ -1,0 +1,9 @@
+<RCC>
+    <qresource prefix="/Res">
+        <file>Images/reefy_profile_no_bg.png</file>
+        <file>Images/welcome_splash.png</file>
+        <file>Images/icon.png</file>
+        <file>Images/Icons/save.png</file>
+        <file>Images/__DummyTilesheet.png</file>
+    </qresource>
+</RCC>
