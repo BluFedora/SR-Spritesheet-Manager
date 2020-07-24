@@ -211,7 +211,7 @@ void ImageLibrary::deserializeImpl(Project& project, QTreeWidgetItem* parent, co
   }
 }
 
-void ImageLibrary::addDirectory(QStringList& files)
+void ImageLibrary::addDirectory(QStringList& files, bool emit_signal)
 {
   QCollator collator;
   collator.setNumericMode(true);
@@ -225,30 +225,43 @@ void ImageLibrary::addDirectory(QStringList& files)
     addImage(file, false);
   }
 
-  emit signalImagesAdded();
+  if (emit_signal)
+  {
+    emit signalImagesAdded();
+  }
 }
 
 void ImageLibrary::addUrls(const QList<QUrl>& urls)
 {
-  for (const QUrl& url : urls)
+  if (!urls.isEmpty())
   {
-    const QFileInfo file_info(url.toLocalFile());
-
-    if (file_info.isDir())
+    for (const QUrl& url : urls)
     {
-      QDir directory = file_info.absoluteFilePath();
+      const QFileInfo file_info(url.toLocalFile());
 
-      if (directory.exists())
+      if (file_info.isDir())
       {
-        QStringList files = directory.entryList(QDir::Files | QDir::Readable);
+        QDir directory = file_info.absoluteFilePath();
 
-        addDirectory(files);
+        if (directory.exists())
+        {
+          QStringList files = directory.entryList(QDir::Files | QDir::Readable);
+
+          for (QString& file : files)
+          {
+            file = directory.filePath(file);
+          }
+
+          addDirectory(files, false);
+        }
+      }
+      else
+      {
+        addImage(file_info.filePath(), false);
       }
     }
-    else
-    {
-      addImage(file_info.filePath());
-    }
+
+    emit signalImagesAdded();
   }
 }
 

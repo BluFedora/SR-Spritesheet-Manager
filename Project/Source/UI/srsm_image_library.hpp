@@ -39,7 +39,7 @@ class ImageLibrary : public QTreeWidget
   void        deserialize(Project& project, const QJsonObject& data);
   void        addImage(const QString& img_path, bool emit_signal = true);
   void        addNewFolder();
-  void        addDirectory(QStringList& files);
+  void        addDirectory(QStringList& files, bool emit_signal = true);
   void        addUrls(const QList<QUrl>& urls);
 
  signals:

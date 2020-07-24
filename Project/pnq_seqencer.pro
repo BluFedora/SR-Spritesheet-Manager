@@ -8,10 +8,9 @@ QT += core gui
 
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
-TARGET   = TideSpritesheetGenerator
+TARGET   = SRSpritesheetManager
 TEMPLATE = app
 
-CONFIG += c++11
 CONFIG += c++14
 
 SOURCES += \
@@ -52,6 +51,9 @@ FORMS    += \
 DEFINES += QT_DEPRECATED_WARNINGS
 
 # Fail to compile if APIs deprecated in Qt <= 5.14.0 are used
+
+# I am using "QWheelEvent::delta" which is deprecated as of 5.15
+
 DEFINES += QT_DISABLE_DEPRECATED_BEFORE=331264
 
 DISTFILES +=

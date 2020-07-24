@@ -65,6 +65,11 @@ struct AnimationFrame final : public QStandardItem
   QString full_path() const { return data(Qt::UserRole + 2).toString(); }
   float   frame_time() const { return data(Qt::UserRole + 3).toFloat(); }
 
+  void setFrameTime(float value)
+  {
+    setData(value, Qt::UserRole + 3);
+  }
+
   // QStandardItem interface
  public:
   QStandardItem* clone() const override;
@@ -88,6 +93,7 @@ struct Animation final : public QStandardItem
   void            addFrame(const QString& rel_path, const QString& full_path);
   void            addFrame(AnimationFrame* frame);
   AnimationFrame* frameAt(int index) const;
+  void            swapFrames(int a, int b);
 
   void notifyChanged();
 };

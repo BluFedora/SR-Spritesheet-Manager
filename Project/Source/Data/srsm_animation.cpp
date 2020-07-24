@@ -53,6 +53,22 @@ AnimationFrame* Animation::frameAt(int index) const
   return dynamic_cast<AnimationFrame*>(frame_list.item(index, 0));
 }
 
+void Animation::swapFrames(int a, int b)
+{
+  Q_ASSERT(a != b);
+
+  if (a > b)
+  {
+    std::swap(a, b);
+  }
+
+  auto item_a = frame_list.takeRow(a)[0];
+  auto item_b = frame_list.takeRow(b - 1)[0];
+
+  frame_list.insertRow(a, item_b);
+  frame_list.insertRow(b, item_a);
+}
+
 void Animation::notifyChanged()
 {
   parent->notifyAnimationChanged(this);

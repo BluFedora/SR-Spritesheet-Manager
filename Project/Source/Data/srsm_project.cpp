@@ -109,7 +109,12 @@ void Project::markAtlasModifed()
 
 void Project::onTimelineFpsChange(int value)
 {
-  animationAt(m_SelectedAnimation)->frame_rate = value;
+  Animation* const animation = animationAt(m_SelectedAnimation);
+
+  animation->frame_rate = value;
+
+  emit animationChanged(animation);
+
   m_UI.setWindowModified(true);
 }
 
@@ -171,15 +176,18 @@ bool Project::open(const QString& file_path)
   {
     if (json_doc.isObject())
     {
+      // NOTE(SR): Must happen before the 'deserialize' call for correct file path resolution.
+
+      m_ProjectFile = std::make_unique<QDir>(QFileInfo{file_path}.dir());
+
       if (deserialize(json_doc.object()))
       {
-        m_ProjectFile = std::make_unique<QDir>(QFileInfo{file_path}.dir());
-
         m_UI.setWindowModified(false);
 
         return true;
       }
 
+      m_ProjectFile.reset();
       return false;
     }
   }

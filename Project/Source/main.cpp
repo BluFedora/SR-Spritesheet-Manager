@@ -6,12 +6,12 @@
 // Copyright (c) 2020 Shareef Abdoul-Raheem
 //
 
-#include "UI/sr_welcome_window.hpp" // WelcomeWindow
-#include "mainwindow.h"             // MainWindow
+#include "UI/sr_welcome_window.hpp"  // WelcomeWindow
+#include "mainwindow.h"              // MainWindow
 
-#include <QApplication>  // QApplication
-#include <QDir>          // For MacOS
-#include <QStyleFactory> // QStyleFactory
+#include <QApplication>   // QApplication
+#include <QDir>           // For MacOS
+#include <QStyleFactory>  // QStyleFactory
 
 /*!
  * @brief main
@@ -36,13 +36,13 @@ int main(int argc, char *argv[])
 #ifdef Q_OS_MACX
   QDir bin(QCoreApplication::applicationDirPath());
   /* Set working directory */
-  bin.cdUp();    /* Fix this on Mac because of the .app folder, */
-  bin.cdUp();    /* which means that the actual executable is   */
-  bin.cdUp();    /* three levels deep. Grrr.                    */
+  bin.cdUp(); /* Fix this on Mac because of the .app folder, */
+  bin.cdUp(); /* which means that the actual executable is   */
+  bin.cdUp(); /* three levels deep. Grrr.                    */
   QDir::setCurrent(bin.absolutePath());
 #endif
 
-  // QApplication::setStyle(QStyleFactory::create("Fusion"));
+  QApplication::setStyle(QStyleFactory::create("Fusion"));
 
   WelcomeWindow welcome_window;
   welcome_window.show();

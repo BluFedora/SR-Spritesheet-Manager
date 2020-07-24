@@ -4,6 +4,7 @@
         <file>Images/welcome_splash.png</file>
         <file>Images/icon.png</file>
         <file>Images/Icons/save.png</file>
-        <file>Images/__DummyTilesheet.png</file>
+        <file>Images/Runtime/no-animation-selected.png</file>
+        <file>Images/Runtime/bg-grid.png</file>
     </qresource>
 </RCC>

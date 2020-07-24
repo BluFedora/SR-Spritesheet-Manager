@@ -53,10 +53,20 @@ MainWindow::MainWindow(const QString& name, QWidget* parent) :
   QObject::connect(m_OpenProject.get(), &Project::animationChanged, m_TimelineFrames, &Timeline::onAnimationChanged);
   QObject::connect(m_OpenProject.get(), &Project::animationSelected, m_TimelineFrames, &Timeline::onAnimationSelected);
   QObject::connect(m_OpenProject.get(), &Project::animationSelected, m_FrameList, &FrameListView::onSelectAnimation);
+  QObject::connect(m_OpenProject.get(), &Project::animationSelected, m_GfxPreview, &AnimationPreview::onAnimationSelected);
   QObject::connect(m_ActionImageLibraryNewFolder, &QAction::triggered, m_OpenProject.get(), &Project::onCreateNewFolder);
   QObject::connect(m_ActionImportImages, &QAction::triggered, m_OpenProject.get(), &Project::onImportImages);
   QObject::connect(m_OpenProject.get(), &Project::renamed, this, &MainWindow::onProjectRenamed);
   QObject::connect(m_AnimationList, &QListView::customContextMenuRequested, this, &MainWindow::onAnimationRightClick);
+
+  static bool s_IsPlaying = true;
+
+  m_TimelinePlayButton->setIcon(style()->standardIcon(QStyle::SP_MediaPlay));
+
+  QObject::connect(m_TimelinePlayButton, &QToolButton::clicked, [this]() {
+    s_IsPlaying = !s_IsPlaying;
+    m_TimelinePlayButton->setIcon(s_IsPlaying ? style()->standardIcon(QStyle::SP_MediaPlay) : style()->standardIcon(QStyle::SP_MediaPause));
+  });
 
 #if 0
   bfAnimation2DCreateParams anim_params;
