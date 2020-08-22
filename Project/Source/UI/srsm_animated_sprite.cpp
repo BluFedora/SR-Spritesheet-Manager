@@ -1,5 +1,7 @@
 #include "srsm_animated_sprite.hpp"
 
+#include <QPainter>
+
 AnimatedSprite::AnimatedSprite(Project* project) :
   m_Project{project},
   m_Size{256.0f, 256.0f},
@@ -8,4 +10,10 @@ AnimatedSprite::AnimatedSprite(Project* project) :
 {
   // setFlags(QGraphicsItem::ItemIsSelectable  | QGraphicsItem::ItemIsMovable);
   setCacheMode(NoCache);
+}
+
+void AnimatedSprite::paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget)
+{
+  //painter->fillRect(boundingRect(), Qt::red);
+  QGraphicsPixmapItem::paint(painter, option, widget);
 }

@@ -45,7 +45,13 @@
    <item row="1" column="1">
     <widget class="QSpinBox" name="m_Framerate">
      <property name="focusPolicy">
-      <enum>Qt::ClickFocus</enum>
+      <enum>Qt::TabFocus</enum>
+     </property>
+     <property name="buttonSymbols">
+      <enum>QAbstractSpinBox::UpDownArrows</enum>
+     </property>
+     <property name="showGroupSeparator" stdset="0">
+      <bool>false</bool>
      </property>
      <property name="suffix">
       <string> fps</string>
@@ -55,6 +61,9 @@
      </property>
      <property name="maximum">
       <number>240</number>
+     </property>
+     <property name="stepType">
+      <enum>QAbstractSpinBox::DefaultStepType</enum>
      </property>
      <property name="value">
       <number>10</number>
@@ -96,6 +105,9 @@
      <property name="enabled">
       <bool>true</bool>
      </property>
+     <property name="focusPolicy">
+      <enum>Qt::TabFocus</enum>
+     </property>
      <property name="orientation">
       <enum>Qt::Horizontal</enum>
      </property>
@@ -106,6 +118,11 @@
    </item>
   </layout>
  </widget>
+ <tabstops>
+  <tabstop>m_AnimName</tabstop>
+  <tabstop>m_Framerate</tabstop>
+  <tabstop>m_ButtonBox</tabstop>
+ </tabstops>
  <resources>
   <include location="../Resources/ResourceFile.qrc"/>
  </resources>
@@ -118,7 +135,7 @@
    <hints>
     <hint type="sourcelabel">
      <x>248</x>
-     <y>254</y>
+     <y>89</y>
     </hint>
     <hint type="destinationlabel">
      <x>157</x>
@@ -133,8 +150,8 @@
    <slot>reject()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>316</x>
-     <y>260</y>
+     <x>248</x>
+     <y>89</y>
     </hint>
     <hint type="destinationlabel">
      <x>286</x>

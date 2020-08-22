@@ -1,13 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
+ <author>Shareef Abdoul-Raheem</author>
  <class>WelcomeWindow</class>
  <widget class="QDialog" name="WelcomeWindow">
   <property name="geometry">
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>660</width>
-    <height>392</height>
+    <width>682</width>
+    <height>341</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -16,6 +17,27 @@
     <verstretch>0</verstretch>
    </sizepolicy>
   </property>
+  <property name="minimumSize">
+   <size>
+    <width>682</width>
+    <height>341</height>
+   </size>
+  </property>
+  <property name="maximumSize">
+   <size>
+    <width>682</width>
+    <height>341</height>
+   </size>
+  </property>
+  <property name="font">
+   <font>
+    <family>Segoe UI</family>
+    <pointsize>10</pointsize>
+   </font>
+  </property>
+  <property name="focusPolicy">
+   <enum>Qt::StrongFocus</enum>
+  </property>
   <property name="contextMenuPolicy">
    <enum>Qt::NoContextMenu</enum>
   </property>
@@ -23,18 +45,43 @@
    <string>Welcome v2020.07.01</string>
   </property>
   <property name="windowIcon">
-   <iconset resource="../Resources/ResourceFile.qrc">
+   <iconset resource="../../Resources/ResourceFile.qrc">
     <normaloff>:/Res/Images/icon.png</normaloff>:/Res/Images/icon.png</iconset>
   </property>
   <property name="styleSheet">
    <string notr="true">QDialog {
   background-color: #505050;
+  border: 2px solid rgb(125, 125, 125);
+}
+/*
+*:hover:!pressed
+{
+  border: 1px solid red;
+}
+*/
+
+QListView {
+  border: 2px solid rgb(70, 70, 70);
+}
+
+QListView::item {
+  background: rgb(36, 36, 36);
+ border-radius: 3px;   
+  text-align: center;
+  padding: 2px;
+}
+
+QListView::item:hover:!pressed {
+  background: rgb(70, 70, 70);
 }</string>
   </property>
-  <layout class="QVBoxLayout" name="verticalLayout">
-   <property name="spacing">
-    <number>5</number>
-   </property>
+  <property name="sizeGripEnabled">
+   <bool>false</bool>
+  </property>
+  <property name="modal">
+   <bool>false</bool>
+  </property>
+  <layout class="QGridLayout" name="gridLayout">
    <property name="sizeConstraint">
     <enum>QLayout::SetFixedSize</enum>
    </property>
@@ -50,40 +97,191 @@
    <property name="bottomMargin">
     <number>5</number>
    </property>
-   <item>
-    <widget class="QLabel" name="m_SplashImage">
-     <property name="text">
-      <string/>
+   <property name="spacing">
+    <number>0</number>
+   </property>
+   <item row="0" column="0">
+    <widget class="QWidget" name="m_InnerBorder" native="true">
+     <property name="styleSheet">
+      <string notr="true">QWidget#m_InnerBorder {
+  border: 3px solid #404040;
+	background-color: rgb(204, 31, 130);
+}</string>
      </property>
-     <property name="pixmap">
-      <pixmap resource="../Resources/ResourceFile.qrc">:/Res/Images/welcome_splash.png</pixmap>
-     </property>
-     <property name="scaledContents">
-      <bool>false</bool>
-     </property>
-     <property name="margin">
-      <number>5</number>
-     </property>
-    </widget>
-   </item>
-   <item>
-    <widget class="QPushButton" name="m_NewProjectBtn">
-     <property name="text">
-      <string>New Project</string>
-     </property>
-    </widget>
-   </item>
-   <item>
-    <widget class="QPushButton" name="m_OpenProjectBtn">
-     <property name="text">
-      <string>Open Project</string>
-     </property>
+     <layout class="QGridLayout" name="gridLayout_2">
+      <property name="leftMargin">
+       <number>5</number>
+      </property>
+      <property name="topMargin">
+       <number>5</number>
+      </property>
+      <property name="rightMargin">
+       <number>5</number>
+      </property>
+      <property name="bottomMargin">
+       <number>5</number>
+      </property>
+      <property name="horizontalSpacing">
+       <number>5</number>
+      </property>
+      <property name="verticalSpacing">
+       <number>2</number>
+      </property>
+      <item row="1" column="1">
+       <widget class="QLabel" name="m_RecentSpritesheetLabel">
+        <property name="font">
+         <font>
+          <family>Segoe UI</family>
+          <pointsize>12</pointsize>
+          <weight>50</weight>
+          <italic>false</italic>
+          <bold>false</bold>
+         </font>
+        </property>
+        <property name="autoFillBackground">
+         <bool>false</bool>
+        </property>
+        <property name="styleSheet">
+         <string notr="true">QLabel {
+  color: white;
+ 
+	font: 12pt &quot;Segoe UI&quot;;
+	background-color: rgb(47, 47, 47);
+border-radius: 4px;
+}</string>
+        </property>
+        <property name="text">
+         <string>- Recent Spritesheets -</string>
+        </property>
+        <property name="alignment">
+         <set>Qt::AlignCenter</set>
+        </property>
+        <property name="margin">
+         <number>2</number>
+        </property>
+        <property name="indent">
+         <number>-1</number>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="0" rowspan="7">
+       <widget class="QLabel" name="m_SplashImage">
+        <property name="text">
+         <string/>
+        </property>
+        <property name="textFormat">
+         <enum>Qt::PlainText</enum>
+        </property>
+        <property name="pixmap">
+         <pixmap resource="../../Resources/ResourceFile.qrc">:/Res/Images/welcome_splash.png</pixmap>
+        </property>
+        <property name="scaledContents">
+         <bool>false</bool>
+        </property>
+        <property name="margin">
+         <number>0</number>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="2">
+       <spacer name="horizontalSpacer">
+        <property name="orientation">
+         <enum>Qt::Horizontal</enum>
+        </property>
+        <property name="sizeType">
+         <enum>QSizePolicy::Fixed</enum>
+        </property>
+        <property name="sizeHint" stdset="0">
+         <size>
+          <width>25</width>
+          <height>20</height>
+         </size>
+        </property>
+       </spacer>
+      </item>
+      <item row="5" column="1" colspan="2">
+       <widget class="QPushButton" name="m_NewProjectBtn">
+        <property name="font">
+         <font>
+          <family>Segoe UI</family>
+          <pointsize>10</pointsize>
+         </font>
+        </property>
+        <property name="text">
+         <string>New Spritesheet</string>
+        </property>
+       </widget>
+      </item>
+      <item row="6" column="1" colspan="2">
+       <widget class="QPushButton" name="m_OpenProjectBtn">
+        <property name="font">
+         <font>
+          <family>Segoe UI</family>
+          <pointsize>10</pointsize>
+         </font>
+        </property>
+        <property name="text">
+         <string>Open Spritesheet</string>
+        </property>
+       </widget>
+      </item>
+      <item row="4" column="1" colspan="2">
+       <widget class="QListWidget" name="m_RecentFiles">
+        <property name="minimumSize">
+         <size>
+          <width>0</width>
+          <height>175</height>
+         </size>
+        </property>
+        <property name="styleSheet">
+         <string notr="true">QListView {  
+  color: white;	
+ font: 12pt &quot;Segoe UI&quot;;	
+ background-color: rgb(47, 47, 47);
+border-radius: 4px;
+padding: 5px;
+}</string>
+        </property>
+        <property name="frameShadow">
+         <enum>QFrame::Sunken</enum>
+        </property>
+        <property name="lineWidth">
+         <number>2</number>
+        </property>
+        <property name="editTriggers">
+         <set>QAbstractItemView::NoEditTriggers</set>
+        </property>
+        <property name="showDropIndicator" stdset="0">
+         <bool>false</bool>
+        </property>
+        <property name="defaultDropAction">
+         <enum>Qt::IgnoreAction</enum>
+        </property>
+        <property name="alternatingRowColors">
+         <bool>false</bool>
+        </property>
+        <property name="selectionBehavior">
+         <enum>QAbstractItemView::SelectRows</enum>
+        </property>
+        <property name="textElideMode">
+         <enum>Qt::ElideMiddle</enum>
+        </property>
+        <property name="spacing">
+         <number>3</number>
+        </property>
+        <property name="uniformItemSizes">
+         <bool>true</bool>
+        </property>
+       </widget>
+      </item>
+     </layout>
     </widget>
    </item>
   </layout>
  </widget>
+ <layoutdefault spacing="5" margin="5"/>
  <resources>
-  <include location="../Resources/ResourceFile.qrc"/>
+  <include location="../../Resources/ResourceFile.qrc"/>
  </resources>
  <connections/>
 </ui>

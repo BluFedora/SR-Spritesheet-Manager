@@ -4,24 +4,22 @@
 #
 #-------------------------------------------------
 
-QT += core gui
-
-greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
+QT += core widgets gui network
 
 TARGET   = SRSpritesheetManager
 TEMPLATE = app
 
-CONFIG += c++14
+CONFIG += c++17
 
 SOURCES += \
   Source/Data/srsm_animation.cpp \
   Source/Data/srsm_project.cpp \
+  Source/Data/srsm_settings.cpp \
   Source/UI/sr_welcome_window.cpp \
   Source/UI/srsm_animated_sprite.cpp \
   Source/UI/srsm_animation_preview.cpp \
   Source/UI/srsm_image_library.cpp \
   Source/UI/srsm_timeline.cpp \
-  Source/framelistview.cpp \
   Source/main.cpp \
   Source/mainwindow.cpp \
   Source/newanimation.cpp
@@ -29,13 +27,14 @@ SOURCES += \
 HEADERS  += \
     Source/Data/srsm_animation.hpp \
     Source/Data/srsm_project.hpp \
+    Source/Data/srsm_settings.hpp \
     Source/UI/sr_welcome_window.hpp \
     Source/UI/srsm_animated_sprite.hpp \
     Source/UI/srsm_animation_preview.hpp \
     Source/UI/srsm_image_library.hpp \
     Source/UI/srsm_timeline.hpp \
-    Source/framelistview.hpp \
-    Source/mainwindow.h \
+    Source/main.hpp \
+    Source/mainwindow.hpp \
     Source/newanimation.hpp
 
 INCLUDEPATH += Source/
@@ -60,3 +59,10 @@ DISTFILES +=
 
 RESOURCES += \
   Resources/ResourceFile.qrc
+
+win32:CONFIG(release, debug|release): LIBS += -LE:/Repos/bfEngine/bin/ -lbf.Animation2DDLL
+else:win32:CONFIG(debug, debug|release): LIBS += -LE:/Repos/bfEngine/bin/ -lbf.Animation2DDLLd
+else:unix: LIBS += -LE:/Repos/bfEngine/bin/ -lbf.Animation2DDLL
+
+INCLUDEPATH += E:/Repos/bfEngine/Bifrost/Anim2D/include
+DEPENDPATH += E:/Repos/bfEngine/BifrostEngine/bin

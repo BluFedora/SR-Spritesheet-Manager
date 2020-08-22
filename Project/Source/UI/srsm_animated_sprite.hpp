@@ -38,11 +38,15 @@ class AnimatedSprite : public QGraphicsPixmapItem
 
   // QGraphicsItem Inteface
 
-  QRectF boundingRect() const override { return QRectF(0, 0, m_Size.width(), m_Size.height()); }
+  QRectF boundingRect() const override { return pixmap().rect(); }
   int    type() const override { return QGraphicsItem::UserType + 1; }
 
   QJsonObject serialize();
   void        deserialize(const QJsonObject& data);
+
+  // QGraphicsItem interface
+ public:
+  void paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget) override;
 };
 
 Q_DECLARE_OPERATORS_FOR_FLAGS(AnimatedSprite::States)

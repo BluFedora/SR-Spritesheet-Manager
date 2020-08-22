@@ -23,8 +23,10 @@ class NewAnimation : public QDialog, private Ui::NewAnimation
   QString name() const { return m_AnimName->text().trimmed(); }
   int     frameRate() const { return m_Framerate->value(); }
 
+  // QWidget interface
  protected:
-  void changeEvent(QEvent *e);
+  void changeEvent(QEvent *e) override;
+  void keyPressEvent(QKeyEvent *event) override;
 
  private slots:
   void on_m_AnimName_textChanged(const QString &text);

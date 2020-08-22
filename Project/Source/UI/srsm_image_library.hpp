@@ -1,21 +1,40 @@
-#ifndef IMAGELIBRARY_HPP
-#define IMAGELIBRARY_HPP
+#ifndef SRSM_IMAGELIBRARY_HPP
+#define SRSM_IMAGELIBRARY_HPP
 
 #include <QFileSystemWatcher>
 #include <QTreeWidget>
 
+#include <memory>
+
 class Project;
 struct Animation;
 
-class ImageItem final : public QTreeWidgetItem
+struct AnimationFrameSource final : public std::enable_shared_from_this<AnimationFrameSource>
 {
- public:
-  using QTreeWidgetItem::QTreeWidgetItem;
+  QString full_path;
+  QString rel_path;
+  int     index;
 
-  QJsonObject serialize(Project& project, QMap<QString, QString>& loaded_images);
+  AnimationFrameSource(const QString& full_path, const QString& rel_path) :
+    full_path{full_path},
+    rel_path{rel_path},
+    index{-1}
+  {
+  }
+};
 
-  bool isFolder() const { return flags() & Qt::ItemIsDropEnabled; }
-  bool isImage() const { return !isFolder(); }
+using AnimationFrameSourcePtr = std::shared_ptr<AnimationFrameSource>;
+
+QDataStream& operator<<(QDataStream& stream, const AnimationFrameSourcePtr& data);
+QDataStream& operator>>(QDataStream& stream, AnimationFrameSourcePtr& data);
+
+Q_DECLARE_METATYPE(std::shared_ptr<AnimationFrameSource>)
+
+enum ImageLibraryRole
+{
+  RelativePath = Qt::DisplayRole,
+  AbsolutePath = Qt::UserRole + 0,
+  FrameSource  = Qt::UserRole + 1,
 };
 
 class ImageLibrary : public QTreeWidget
@@ -24,10 +43,13 @@ class ImageLibrary : public QTreeWidget
 
   friend class Project;
 
+  // TODO(SR): m_LoadedImages and m_AbsToFrameSrc can be merged tbh.
+
  private:
-  Project*               m_Project;
-  QMap<QString, QString> m_LoadedImages;
-  QFileSystemWatcher     m_FileWatcher;
+  Project*                               m_Project;
+  QMap<QString, QString>                 m_LoadedImages;
+  QFileSystemWatcher                     m_FileWatcher;
+  QMap<QString, AnimationFrameSourcePtr> m_AbsToFrameSrc;
 
  public:
   ImageLibrary(QWidget* parent);
@@ -35,12 +57,13 @@ class ImageLibrary : public QTreeWidget
   int                           numImages() const { return m_LoadedImages.uniqueKeys().size(); }
   const QMap<QString, QString>& loadedImages() const { return m_LoadedImages; }
 
-  QJsonObject serialize(Project& project);
-  void        deserialize(Project& project, const QJsonObject& data);
-  void        addImage(const QString& img_path, bool emit_signal = true);
-  void        addNewFolder();
-  void        addDirectory(QStringList& files, bool emit_signal = true);
-  void        addUrls(const QList<QUrl>& urls);
+  QJsonObject             serialize(Project& project);
+  void                    deserialize(Project& project, const QJsonObject& data);
+  void                    addImage(const QString& img_path, bool emit_signal = true);
+  void                    addNewFolder();
+  void                    addDirectory(QStringList& files, bool emit_signal = true);
+  void                    addUrls(const QList<QUrl>& urls);
+  AnimationFrameSourcePtr findFrameSource(const QString& abs_img_path);
 
  signals:
   void signalImagesAdded();
@@ -63,4 +86,4 @@ class ImageLibrary : public QTreeWidget
   void        addImage(QTreeWidgetItem* parent, const QString& img_path, bool emit_signal = true);
 };
 
-#endif  // IMAGELIBRARY_HPP
+#endif  // SRSM_IMAGELIBRARY_HPP

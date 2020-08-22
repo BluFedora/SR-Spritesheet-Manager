@@ -8,6 +8,8 @@
 
 #include "newanimation.hpp"
 
+#include <QKeyEvent>
+
 NewAnimation::NewAnimation(QWidget *parent) :
   QDialog(parent)
 {
@@ -36,4 +38,19 @@ void NewAnimation::on_m_AnimName_textChanged(const QString &text)
   const QString trimmed_text = text.trimmed();
 
   m_ButtonBox->setStandardButtons((trimmed_text.isEmpty() ? QDialogButtonBox::NoButton : QDialogButtonBox::Ok) | QDialogButtonBox::Cancel);
+}
+
+void NewAnimation::keyPressEvent(QKeyEvent *event)
+{
+  if (event->key() == Qt::Key_Enter || event->key() == Qt::Key_Return)
+  {
+    if (focusNextChild())
+    {
+      event->accept();
+    }
+  }
+  else
+  {
+    QDialog::keyPressEvent(event);
+  }
 }

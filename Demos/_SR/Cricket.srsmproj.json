@@ -1,0 +1,238 @@
+{
+    "animations": {
+        "Caught": {
+            "frame_rate": 10,
+            "frames": [
+                {
+                    "frame_time": 0.10000000149011612,
+                    "full_path": "E:/Repos/SR-Spritesheet-Manager/Demos/_SR/Cricket/Current/Caught/animation_cricket_caught_01.png"
+                },
+                {
+                    "frame_time": 0.10000000149011612,
+                    "full_path": "E:/Repos/SR-Spritesheet-Manager/Demos/_SR/Cricket/Current/Caught/animation_cricket_caught_02.png"
+                },
+                {
+                    "frame_time": 0.10000000149011612,
+                    "full_path": "E:/Repos/SR-Spritesheet-Manager/Demos/_SR/Cricket/Current/Caught/animation_cricket_caught_03.png"
+                },
+                {
+                    "frame_time": 0.10000000149011612,
+                    "full_path": "E:/Repos/SR-Spritesheet-Manager/Demos/_SR/Cricket/Current/Caught/animation_cricket_caught_04.png"
+                },
+                {
+                    "frame_time": 0.10000000149011612,
+                    "full_path": "E:/Repos/SR-Spritesheet-Manager/Demos/_SR/Cricket/Current/Caught/animation_cricket_caught_05.png"
+                },
+                {
+                    "frame_time": 0.10000000149011612,
+                    "full_path": "E:/Repos/SR-Spritesheet-Manager/Demos/_SR/Cricket/Current/Caught/animation_cricket_caught_06.png"
+                },
+                {
+                    "frame_time": 0.10000000149011612,
+                    "full_path": "E:/Repos/SR-Spritesheet-Manager/Demos/_SR/Cricket/Current/Caught/animation_cricket_caught_07.png"
+                },
+                {
+                    "frame_time": 0.10000000149011612,
+                    "full_path": "E:/Repos/SR-Spritesheet-Manager/Demos/_SR/Cricket/Current/Caught/animation_cricket_caught_08.png"
+                },
+                {
+                    "frame_time": 0.10000000149011612,
+                    "full_path": "E:/Repos/SR-Spritesheet-Manager/Demos/_SR/Cricket/Current/Caught/animation_cricket_caught_09.png"
+                },
+                {
+                    "frame_time": 0.10000000149011612,
+                    "full_path": "E:/Repos/SR-Spritesheet-Manager/Demos/_SR/Cricket/Current/Caught/animation_cricket_caught_10.png"
+                },
+                {
+                    "frame_time": 0.10000000149011612,
+                    "full_path": "E:/Repos/SR-Spritesheet-Manager/Demos/_SR/Cricket/Current/Caught/animation_cricket_caught_11.png"
+                }
+            ]
+        },
+        "Flinch": {
+            "frame_rate": 10,
+            "frames": [
+                {
+                    "frame_time": 0.10000000149011612,
+                    "full_path": "E:/Repos/SR-Spritesheet-Manager/Demos/_SR/Cricket/Current/Flinch/animation_cricket_flinch_01.png"
+                },
+                {
+                    "frame_time": 0.10000000149011612,
+                    "full_path": "E:/Repos/SR-Spritesheet-Manager/Demos/_SR/Cricket/Current/Flinch/animation_cricket_flinch_02.png"
+                }
+            ]
+        },
+        "GunRun": {
+            "frame_rate": 10,
+            "frames": [
+                {
+                    "frame_time": 0.10000000149011612,
+                    "full_path": "E:/Repos/SR-Spritesheet-Manager/Demos/_SR/Cricket/Current/GunRun/animation_cricket_range_01.png"
+                },
+                {
+                    "frame_time": 0.10000000149011612,
+                    "full_path": "E:/Repos/SR-Spritesheet-Manager/Demos/_SR/Cricket/Current/GunRun/animation_cricket_range_02.png"
+                },
+                {
+                    "frame_time": 0.10000000149011612,
+                    "full_path": "E:/Repos/SR-Spritesheet-Manager/Demos/_SR/Cricket/Current/GunRun/animation_cricket_range_03.png"
+                },
+                {
+                    "frame_time": 0.10000000149011612,
+                    "full_path": "E:/Repos/SR-Spritesheet-Manager/Demos/_SR/Cricket/Current/GunRun/animation_cricket_range_04.png"
+                },
+                {
+                    "frame_time": 0.10000000149011612,
+                    "full_path": "E:/Repos/SR-Spritesheet-Manager/Demos/_SR/Cricket/Current/GunRun/animation_cricket_range_05.png"
+                },
+                {
+                    "frame_time": 0.10000000149011612,
+                    "full_path": "E:/Repos/SR-Spritesheet-Manager/Demos/_SR/Cricket/Current/GunRun/animation_cricket_range_06.png"
+                },
+                {
+                    "frame_time": 0.10000000149011612,
+                    "full_path": "E:/Repos/SR-Spritesheet-Manager/Demos/_SR/Cricket/Current/GunRun/animation_cricket_range_07.png"
+                },
+                {
+                    "frame_time": 0.10000000149011612,
+                    "full_path": "E:/Repos/SR-Spritesheet-Manager/Demos/_SR/Cricket/Current/GunRun/animation_cricket_range_08.png"
+                },
+                {
+                    "frame_time": 0.10000000149011612,
+                    "full_path": "E:/Repos/SR-Spritesheet-Manager/Demos/_SR/Cricket/Current/GunRun/animation_cricket_range_09.png"
+                },
+                {
+                    "frame_time": 0.10000000149011612,
+                    "full_path": "E:/Repos/SR-Spritesheet-Manager/Demos/_SR/Cricket/Current/GunRun/animation_cricket_range_10.png"
+                }
+            ]
+        }
+    },
+    "image_library": {
+        "isExpanded": false,
+        "items": [
+            {
+                "isExpanded": true,
+                "items": [
+                    {
+                        "rel_path": "Cricket/Current/Caught/animation_cricket_caught_01.png",
+                        "type": "image"
+                    },
+                    {
+                        "rel_path": "Cricket/Current/Caught/animation_cricket_caught_02.png",
+                        "type": "image"
+                    },
+                    {
+                        "rel_path": "Cricket/Current/Caught/animation_cricket_caught_03.png",
+                        "type": "image"
+                    },
+                    {
+                        "rel_path": "Cricket/Current/Caught/animation_cricket_caught_04.png",
+                        "type": "image"
+                    },
+                    {
+                        "rel_path": "Cricket/Current/Caught/animation_cricket_caught_05.png",
+                        "type": "image"
+                    },
+                    {
+                        "rel_path": "Cricket/Current/Caught/animation_cricket_caught_06.png",
+                        "type": "image"
+                    },
+                    {
+                        "rel_path": "Cricket/Current/Caught/animation_cricket_caught_07.png",
+                        "type": "image"
+                    },
+                    {
+                        "rel_path": "Cricket/Current/Caught/animation_cricket_caught_08.png",
+                        "type": "image"
+                    },
+                    {
+                        "rel_path": "Cricket/Current/Caught/animation_cricket_caught_09.png",
+                        "type": "image"
+                    },
+                    {
+                        "rel_path": "Cricket/Current/Caught/animation_cricket_caught_10.png",
+                        "type": "image"
+                    },
+                    {
+                        "rel_path": "Cricket/Current/Caught/animation_cricket_caught_11.png",
+                        "type": "image"
+                    }
+                ],
+                "name": "Caught",
+                "type": "folder"
+            },
+            {
+                "isExpanded": true,
+                "items": [
+                    {
+                        "rel_path": "Cricket/Current/Flinch/animation_cricket_flinch_01.png",
+                        "type": "image"
+                    },
+                    {
+                        "rel_path": "Cricket/Current/Flinch/animation_cricket_flinch_02.png",
+                        "type": "image"
+                    }
+                ],
+                "name": "Flinch",
+                "type": "folder"
+            },
+            {
+                "isExpanded": true,
+                "items": [
+                    {
+                        "rel_path": "Cricket/Current/GunRun/animation_cricket_range_01.png",
+                        "type": "image"
+                    },
+                    {
+                        "rel_path": "Cricket/Current/GunRun/animation_cricket_range_02.png",
+                        "type": "image"
+                    },
+                    {
+                        "rel_path": "Cricket/Current/GunRun/animation_cricket_range_03.png",
+                        "type": "image"
+                    },
+                    {
+                        "rel_path": "Cricket/Current/GunRun/animation_cricket_range_04.png",
+                        "type": "image"
+                    },
+                    {
+                        "rel_path": "Cricket/Current/GunRun/animation_cricket_range_05.png",
+                        "type": "image"
+                    },
+                    {
+                        "rel_path": "Cricket/Current/GunRun/animation_cricket_range_06.png",
+                        "type": "image"
+                    },
+                    {
+                        "rel_path": "Cricket/Current/GunRun/animation_cricket_range_07.png",
+                        "type": "image"
+                    },
+                    {
+                        "rel_path": "Cricket/Current/GunRun/animation_cricket_range_08.png",
+                        "type": "image"
+                    },
+                    {
+                        "rel_path": "Cricket/Current/GunRun/animation_cricket_range_09.png",
+                        "type": "image"
+                    },
+                    {
+                        "rel_path": "Cricket/Current/GunRun/animation_cricket_range_10.png",
+                        "type": "image"
+                    }
+                ],
+                "name": "GunRun",
+                "type": "folder"
+            }
+        ],
+        "name": "",
+        "type": "folder"
+    },
+    "last_saved_path": "E:/Repos/SR-Spritesheet-Manager/Demos/_SR",
+    "m_EditUUID": "949ccdc4-e1a3-4fd8-9952-8f4f760c40ab",
+    "m_SelectedAnimation": -1,
+    "m_SelectedFrame": -1,
+    "m_SpriteSheetFrameSize": 256,
+    "m_SpriteSheetImageSize": 2048,
+    "name": "Cricket"
+}

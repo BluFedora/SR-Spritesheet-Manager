@@ -55,10 +55,12 @@ Actions that can happen in the program:
 // Main Data Structures
 
 struct Header {
-  /* off: 0 */ uint32 magic;       // Is required to the the ASCII bytes "SRSM".
-  /* off: 4 */ uint16 data_offset; // The offset to move by to get to the data.
-  /* off: 6 */ uint8  version;     // The current version of the file format. (must be 0)
-  /* off: 7 */ uint8  num_chunks;  // Number of chunks contains in this file.
+  /* off:  0 */ uint32 magic;        // Is required to the the ASCII bytes "SRSM".
+  /* off:  4 */ uint16 data_offset;  // The offset to move by to get to the data.
+  /* off:  6 */ uint8  version;      // The current version of the file format. (must be 0)
+  /* off:  7 */ uint8  num_chunks;   // Number of chunks contained in the binary.
+  /* off:  8 */ uint16 atlas_width;  // The width of the spritesheet image.
+  /* off: 10 */ uint16 atlas_height; // The height of the spritesheet image.
 }
 
 struct Chunk {
@@ -77,6 +79,10 @@ struct ChunkFrames /* chunk_type = "FRME" */ {
 struct ChuckAnimData /* chunk_type = "ANIM" */ {
   uint32        num_animations;
   AnimationData name[num_animations];
+}
+
+struct ChunkLiveEditData /* chunk_type = "EDIT" */ {
+  uint8 uuid[37]; /*!< Nul terminated string. 'xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx\0' */
 }
 
 // Optional Chunk used to indicate the end of the file.
@@ -102,7 +108,7 @@ struct AnimationData {
   uint32            name_length;
   uint8             name[name_length + 1]; // Nul terminated.
   uint32            num_frames;
-  FrameInstanceData frames;
+  FrameInstanceData frames[num_frames];
 }
 ```
 
@@ -134,3 +140,22 @@ References:
   - To add frames drag from the "Image Library" into the list.
   - Frames can be reordered by dragging and dropping.
   - To remove some frames select them and press the delete or backspace key.
+
+
+# Runtimes I Should Support:
+
+> Unity
+> Cocos2D-X
+> Cocos2D
+> SpriteKit
+> Starling
+> Sparrow
+> LibGDX
+> Moai
+> V-Play
+> Corona(TM) SDK
+> Phaser
+> MelonJS
+> Monogame
+> HTML5 / CSS sprites
+> Custom C/++

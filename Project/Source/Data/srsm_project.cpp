@@ -8,8 +8,9 @@
 
 #include "srsm_project.hpp"
 
+#include "Data/srsm_settings.hpp"     // Settings
 #include "UI/srsm_image_library.hpp"  // ImageLibrary
-#include "mainwindow.h"
+#include "mainwindow.hpp"
 
 #include <QDebug>
 #include <QFileDialog>
@@ -23,6 +24,7 @@
 
 Project::Project(MainWindow* main_window, const QString& name) :
   m_Name{name},
+  m_EditUUID{},
   m_ProjectFile{nullptr},
   m_ImageLibrary{nullptr},
   m_HistoryStack{new QUndoStack(main_window)},
@@ -30,26 +32,18 @@ Project::Project(MainWindow* main_window, const QString& name) :
   m_UI{*main_window},
   m_Export{},
   m_SelectedAnimation{-1},
-  m_SelectedFrame{-1},
   m_SpriteSheetImageSize{2048},
   m_SpriteSheetFrameSize{256},
   m_AtlasModified{false},
   m_IsRegeneratingAtlas{false}
 {
-  QObject::connect(m_HistoryStack, &QUndoStack::indexChanged, [this](int idx) {
-    if (m_AtlasModified)
-    {
-      qDebug() << "HS set index " << idx;
-      m_AtlasModified = false;
-    }
-  });
 }
 
 void Project::newAnimation(const QString& name, int frame_rate)
 {
   if (!hasAnimation(name))
   {
-    recordAction(tr("New Animation (%1)").arg(name), [this, name, frame_rate]() {
+    recordAction(tr("New Animation (%1)").arg(name), UndoActionFlag_ModifiedAnimation, [this, name, frame_rate]() {
       newAnimationRaw(name, frame_rate);
     });
   }
@@ -61,29 +55,42 @@ void Project::newAnimation(const QString& name, int frame_rate)
 
 void Project::selectAnimation(QModelIndex index)
 {
-  const bool is_valid = index.isValid();
+  selectAnimation(index.isValid() ? index.row() : -1);
+}
 
-  m_SelectedAnimation = is_valid ? index.row() : -1;
-
-  Animation* const animation = is_valid ? animationAt(m_SelectedAnimation) : nullptr;
-
-  if (is_valid)
+void Project::selectAnimation(int index)
+{
+  if (m_SelectedAnimation != index)
   {
-    m_UI.timelineFpsSpinbox().setValue(animation->frame_rate);
+    const bool is_valid = index != -1;
+
+    m_SelectedAnimation = index;
+
+    Animation* const animation = is_valid ? animationAt(m_SelectedAnimation) : nullptr;
+
+    if (animation)
+    {
+      m_UI.timelineFpsSpinbox().setValue(animation->frame_rate);
+    }
+
+    m_UI.timelineFpsSpinbox().setEnabled(animation);
+
+    emit animationSelected(animation);
   }
-
-  m_UI.timelineFpsSpinbox().setEnabled(is_valid);
-
-  emit animationSelected(is_valid ? animationAt(m_SelectedAnimation) : nullptr);
 }
 
 void Project::removeAnimation(QModelIndex index)
 {
-  Animation* animation = animationAt(index);
+  Animation* const animation = animationAt(index);
 
   if (animation)
   {
-    recordAction(tr("Remove Animation (%1)").arg(animation->name()), [this, index]() {
+    recordAction(tr("Remove Animation (%1)").arg(animation->name()), UndoActionFlag_ModifiedAnimation, [this, index]() {
+      if (index.row() == m_SelectedAnimation)
+      {
+        selectAnimation(-1);
+      }
+
       m_AnimationList.removeRow(index.row(), index.parent());
       m_UI.setWindowModified(true);
     });
@@ -92,7 +99,7 @@ void Project::removeAnimation(QModelIndex index)
 
 void Project::importImageUrls(const QList<QUrl>& urls)
 {
-  recordAction(tr("Import Dragged Images"), [this, &urls]() {
+  recordAction(tr("Import Dragged Images"), UndoActionFlag_ModifiedAtlas, [this, &urls]() {
     m_ImageLibrary->addUrls(urls);
   });
 }
@@ -104,25 +111,34 @@ void Project::notifyAnimationChanged(Animation* animation)
 
 void Project::markAtlasModifed()
 {
+  m_UI.setWindowModified(true);
   m_AtlasModified = true;
+}
+
+void Project::markAnimationsModifed()
+{
+  m_UI.setWindowModified(true);
+  regenAnimationInfo();
 }
 
 void Project::onTimelineFpsChange(int value)
 {
   Animation* const animation = animationAt(m_SelectedAnimation);
 
-  animation->frame_rate = value;
+  if (animation->frame_rate != value)
+  {
+    animation->frame_rate = value;
 
-  emit animationChanged(animation);
+    notifyAnimationChanged(animation);
 
-  m_UI.setWindowModified(true);
+    m_UI.setWindowModified(true);
+  }
 }
 
 void Project::onCreateNewFolder()
 {
-  recordAction(tr("Created New Folder"), [this]() {
+  recordAction(tr("Created New Folder"), UndoActionFlag_ModifiedSettings, [this]() {
     m_ImageLibrary->addNewFolder();
-    m_UI.setWindowModified(true);
   });
 }
 
@@ -132,9 +148,40 @@ void Project::onImportImages()
 
   if (!files.isEmpty())
   {
-    recordAction("Import Images", [this, &files]() {
+    recordAction("Import Images", UndoActionFlag_ModifiedAtlas, [this, &files]() {
       m_ImageLibrary->addDirectory(files);
-      m_UI.setWindowModified(true);
+    });
+  }
+}
+
+void Project::setSpritesheetImageSize(int value)
+{
+  if (m_SpriteSheetImageSize != unsigned(value))
+  {
+    recordAction(tr("Image Quality Set To %1 px").arg(value), UndoActionFlag_ModifiedAtlas, [this, value]() {
+      m_SpriteSheetImageSize = value;
+      markAtlasModifed();
+    });
+  }
+}
+
+void Project::setSpritesheetFrameSize(int value)
+{
+  if (m_SpriteSheetFrameSize != unsigned(value))
+  {
+    recordAction(tr("Frame Quality Set To %1").arg(value), UndoActionFlag_ModifiedAtlas, [this, value]() {
+      m_SpriteSheetFrameSize = value;
+      markAtlasModifed();
+    });
+  }
+}
+
+void Project::setProjectName(const QString& value)
+{
+  if (value != m_Name)
+  {
+    recordAction(tr("Renamed Project To %1").arg(value), UndoActionFlag_ModifiedSettings, [this, value]() {
+      setProjectNameRaw(value);
     });
   }
 }
@@ -145,13 +192,24 @@ void Project::newAnimationRaw(const QString& name, int frame_rate)
   m_UI.setWindowModified(true);
 }
 
+void Project::setProjectNameRaw(const QString& new_name)
+{
+  if (new_name != m_Name)
+  {
+    m_Name = new_name;
+    m_UI.setWindowModified(true);
+    emit renamed(m_Name);
+  }
+}
+
 void Project::setup(ImageLibrary* img_library)
 {
   m_ImageLibrary            = img_library;
   m_ImageLibrary->m_Project = this;
 
-  QObject::connect(img_library, &ImageLibrary::signalImagesAdded, this, &Project::regenExport);
-  QObject::connect(img_library, &ImageLibrary::signalImagesChanged, this, &Project::regenExport);
+  QObject::connect(img_library, &ImageLibrary::signalImagesAdded, this, &Project::markAtlasModifed);
+  QObject::connect(img_library, &ImageLibrary::signalImagesChanged, this, &Project::markAtlasModifed);
+  QObject::connect(m_HistoryStack, &QUndoStack::indexChanged, this, &Project::regenExport);
 }
 
 static bool loadJson(QString file_name, QJsonDocument& out)
@@ -180,8 +238,25 @@ bool Project::open(const QString& file_path)
 
       m_ProjectFile = std::make_unique<QDir>(QFileInfo{file_path}.dir());
 
-      if (deserialize(json_doc.object()))
+      const QJsonObject json_obj = json_doc.object();
+
+      if (deserialize(json_obj))
       {
+        if (json_obj.contains("m_EditUUID"))
+        {
+          m_EditUUID = QUuid(json_obj.value("m_EditUUID").toString("00000000-0000-0000-0000-000000000000"));
+        }
+
+        if (m_EditUUID.isNull())
+        {
+          m_EditUUID = QUuid::createUuid();
+        }
+
+        const QString& json_file_path = m_ProjectFile->absoluteFilePath(m_Name + ".srsmproj.json");
+
+        Settings::addRecentFile(name(), json_file_path);
+
+        regenExport();
         m_UI.setWindowModified(false);
 
         return true;
@@ -195,11 +270,11 @@ bool Project::open(const QString& file_path)
   return false;
 }
 
-bool Project::save(QWidget* parent)
+bool Project::save()
 {
   if (!m_ProjectFile)
   {
-    QString dir = QFileDialog::getExistingDirectory(parent, "Where To Save the Project", "", QFileDialog::ShowDirsOnly);
+    QString dir = QFileDialog::getExistingDirectory(&m_UI, "Where To Save the Project", "", QFileDialog::ShowDirsOnly);
 
     if (dir.isEmpty())
     {
@@ -210,8 +285,23 @@ bool Project::save(QWidget* parent)
     m_ProjectFile->makeAbsolute();
   }
 
+  if (m_EditUUID.isNull())
+  {
+    m_EditUUID = QUuid::createUuid();
+  }
+
   const QString& json_file_path = m_ProjectFile->absoluteFilePath(m_Name + ".srsmproj.json");
   QJsonObject    project_data   = serialize();
+
+  Settings::addRecentFile(name(), json_file_path);
+
+  // This data should not be saved to file.
+  project_data["m_SelectedAnimation"] = -1;
+  project_data["m_SelectedFrame"]     = -1;
+
+  // This data is exclusive to the save file.
+
+  project_data["m_EditUUID"] = m_EditUUID.toString(QUuid::WithoutBraces);
 
   const QByteArray& json_as_bytes = QJsonDocument(project_data).toJson(QJsonDocument::Indented);
 
@@ -243,14 +333,13 @@ QJsonObject Project::serialize()
 
     QJsonArray frames_data;
 
-    for (int j = 0; j < anim->frame_list.rowCount(); ++j)
+    for (std::uint32_t j = 0; j < anim->numFrames(); ++j)
     {
-      AnimationFrame* anim_frame = (AnimationFrame*)anim->frame_list.item(j, 0);
+      AnimationFrameInstance* anim_frame = anim->frameAt(j);
 
       frames_data.push_back(QJsonObject{
-       {"rel_path", anim_frame->rel_path()},
        {"full_path", anim_frame->full_path()},
-       {"frame_time", anim_frame->frame_time()},
+       {"frame_time", anim_frame->frame_time},
       });
     }
 
@@ -265,55 +354,77 @@ QJsonObject Project::serialize()
    {"last_saved_path", abs_path},
    {"image_library", m_ImageLibrary->serialize(*this)},
    {"animations", animations_data},
+   {"m_SelectedAnimation", m_SelectedAnimation},
+   {"m_SpriteSheetImageSize", int(m_SpriteSheetImageSize)},
+   {"m_SpriteSheetFrameSize", int(m_SpriteSheetFrameSize)},
   };
 }
 
-bool Project::deserialize(const QJsonObject& data)
+bool Project::deserialize(const QJsonObject& data, UndoActionFlags flags)
 {
   if (data.contains("name") && data.contains("image_library") && data.contains("animations"))
   {
-    selectAnimation(QModelIndex());
-    m_AnimationList.removeRows(0, m_AnimationList.rowCount());
-
-    const QString new_name = data.value("name").toString();
-
-    if (new_name != m_Name)
+    if (flags & UndoActionFlag_ModifiedSettings)
     {
-      m_Name = new_name;
-      emit renamed(m_Name);
+      setProjectNameRaw(data.value("name").toString());
+
+      m_UI.setWindowModified(true);
     }
 
-    m_ImageLibrary->deserialize(*this, data.value("image_library").toObject());
-
-    const QJsonObject animation_data = data["animations"].toObject();
-
-    int anim_index = 0;
-    for (const auto& animation_data_key : animation_data.keys())
+    if (flags & UndoActionFlag_ModifiedAtlas)
     {
-      const auto anim = animation_data[animation_data_key];
+      m_ImageLibrary->deserialize(*this, data.value("image_library").toObject());
 
-      newAnimationRaw(animation_data_key, anim["frame_rate"].toInt());
+      m_SpriteSheetImageSize = data.value("m_SpriteSheetImageSize").toInt(m_SpriteSheetImageSize);
+      m_SpriteSheetFrameSize = data.value("m_SpriteSheetFrameSize").toInt(m_SpriteSheetFrameSize);
 
-      Animation* anim_obj = (Animation*)m_AnimationList.item(anim_index, 0);
+      markAtlasModifed();
+      regenExport();
 
-      QJsonArray frames_data = anim["frames"].toArray();
+      m_UI.setWindowModified(true);
+    }
 
-      for (const auto& frame : frames_data)
+    // A modifed atlas implies a modified animation since the frame indices may change.
+    if (flags & (UndoActionFlag_ModifiedAnimation | UndoActionFlag_ModifiedAtlas))
+    {
+      selectAnimation(QModelIndex());
+      m_AnimationList.removeRows(0, m_AnimationList.rowCount());
+
+      const QJsonObject animation_data = data["animations"].toObject();
+
+      int anim_index = 0;
+      for (const auto& animation_data_key : animation_data.keys())
       {
-        const auto frame_data = frame.toObject();
+        const auto anim = animation_data[animation_data_key];
 
-        anim_obj->addFrame(
-         new AnimationFrame(
-          frame_data["rel_path"].toString(),
-          frame_data["full_path"].toString(),
-          (float)frame_data["frame_time"].toDouble(1.0 / (double)anim_obj->frame_rate)));
+        newAnimationRaw(animation_data_key, anim["frame_rate"].toInt());
+
+        Animation* anim_obj = (Animation*)m_AnimationList.item(anim_index, 0);
+
+        QJsonArray frames_data = anim["frames"].toArray();
+
+        for (const auto& frame : frames_data)
+        {
+          const auto frame_data = frame.toObject();
+          const auto abs_path   = frame_data["full_path"].toString();
+          const auto frame_src  = m_ImageLibrary->findFrameSource(abs_path);
+
+          anim_obj->addFrame(
+           AnimationFrameInstance(
+            frame_src,
+            (float)frame_data["frame_time"].toDouble(1.0 / (double)anim_obj->frame_rate)));
+        }
+
+        ++anim_index;
       }
 
-      ++anim_index;
-    }
+      const int selected_anim = data.value("m_SelectedAnimation").toInt(-1);
 
-    m_UI.setWindowModified(true);
-    regenExport();
+      selectAnimation(selected_anim);
+      m_UI.animationListView().setCurrentIndex(m_AnimationList.index(selected_anim, 0, QModelIndex()));
+
+      m_UI.setWindowModified(true);
+    }
 
     return true;
   }
@@ -321,9 +432,24 @@ bool Project::deserialize(const QJsonObject& data)
   return false;
 }
 
+int Project::numAnimations() const
+{
+  return m_AnimationList.rowCount();
+}
+
+extern QRect aspectRatioDrawRegion(std::uint32_t aspect_w, std::uint32_t aspect_h, std::uint32_t window_w, std::uint32_t window_h);
+extern int   roundToUpperMultiple(int n, int grid_size);
+
 void Project::regenExport()
 {
-  static constexpr int k_FramePadding = 5;
+  static constexpr int k_FramePadding = 0;
+
+  if (!m_AtlasModified)
+  {
+    return;
+  }
+
+  m_AtlasModified = false;
 
   if (m_IsRegeneratingAtlas)
   {
@@ -337,155 +463,246 @@ void Project::regenExport()
     m_IsRegeneratingAtlas = true;
 
     const QMap<QString, QString>& loaded_images  = m_ImageLibrary->loadedImages();
-    QMap<QString, std::uint32_t>& frame_to_index = m_Export.abs_path_to_index;
-    const unsigned int            num_frame_cols = m_SpriteSheetImageSize / m_SpriteSheetFrameSize;
+    QMap<QString, std::uint32_t>  frame_to_index = {};
+    const unsigned int            atlas_width    = roundToUpperMultiple(m_SpriteSheetImageSize, m_SpriteSheetFrameSize);  // TODO(SR): This policy is probrably stupid and makes 'm_SpriteSheetImageSize' nearly useless from the user's perspectiv.e
+    const unsigned int            num_frame_cols = atlas_width / m_SpriteSheetFrameSize;
     const unsigned int            num_frame_rows = std::ceil(static_cast<float>(num_images) / static_cast<float>(num_frame_cols));
     const unsigned int            atlas_height   = num_frame_rows * m_SpriteSheetFrameSize;
     unsigned int                  current_x      = 0;
     unsigned int                  current_y      = 0;
     std::uint32_t                 current_frame  = 0;
+    std::vector<QRect>            frame_rects    = {};
+    auto&                         image_rects    = m_Export.image_rectangles;
 
     QProgressDialog progress("Generating Spritesheet", "Cancel", 0, num_images + 1, &m_UI);
     progress.setWindowModality(Qt::ApplicationModal);
     progress.setMinimumDuration(0);
 
-    QImage atlas_image((int)m_SpriteSheetImageSize, (int)atlas_height, QImage::Format_ARGB32);
+    // TODO(Shareef): THE MAX SIZE OF QImage is '32767'x'32767'. This is buggy....
+    // [https://doc.qt.io/archives/qt-4.8/qpainter.html#limitations]
+
+    QImage atlas_image((int)atlas_width, (int)atlas_height, QImage::Format_ARGB32);
     atlas_image.fill(0x00000000);
 
     QPainter painter(&atlas_image);
+    painter.setRenderHint(QPainter::Antialiasing, true);
+    painter.setRenderHint(QPainter::SmoothPixmapTransform, true);
 
     m_Export.atlas_data = std::make_unique<QBuffer>();
 
-    QBuffer& byte_buffer = *m_Export.atlas_data;
+    image_rects.clear();
 
-    byte_buffer.open(QIODevice::WriteOnly);
+    const auto loaded_images_keys = loaded_images.keys();
 
-    std::uint16_t data_offset       = 7;
-    std::uint8_t  header_version    = 0;
-    std::uint8_t  header_num_chunks = 3;
+    frame_rects.reserve(loaded_images_keys.size());
+
+    for (const QString& abs_image_path : loaded_images_keys)
+    {
+#define OPTIMIZE_USE_SLOW_SCALING 0
+#define OPTIMIZE_USE_PIXMAP 1
+
+#if OPTIMIZE_USE_PIXMAP
+      const QPixmap image(abs_image_path);
+#else
+      const QImage image(abs_image_path);
+#endif
+      if (!image.isNull())
+      {
+        const auto  frame_src   = m_ImageLibrary->findFrameSource(abs_image_path);
+        const QSize scaled_size = QSize(m_SpriteSheetFrameSize - k_FramePadding, m_SpriteSheetFrameSize - k_FramePadding);
+
+#if OPTIMIZE_USE_SLOW_SCALING
+#if OPTIMIZE_USE_PIXMAP
+        const QPixmap scaled_image = image.scaled(scaled_size.width(), scaled_size.height(), Qt::KeepAspectRatio, Qt::SmoothTransformation);
+#else
+        const QImage scaled_image = image.scaled(scaled_size.width(), scaled_size.height(), Qt::KeepAspectRatio, Qt::SmoothTransformation);
+#endif
+        const auto offset_x = (m_SpriteSheetFrameSize - scaled_image.width()) / 2;
+        const auto offset_y = (m_SpriteSheetFrameSize - scaled_image.height()) / 2;
+#else
+        const QRect  scaled_image = aspectRatioDrawRegion(image.width(), image.height(), scaled_size.width(), scaled_size.height());
+        const auto   offset_x     = scaled_image.x();
+        const auto   offset_y     = scaled_image.y();
+#endif
+
+#if OPTIMIZE_USE_SLOW_SCALING
+        const auto draw_point = QPoint(current_x + offset_x, current_y + offset_y);
+
+#if OPTIMIZE_USE_PIXMAP
+        painter.drawPixmap(draw_point, scaled_image);
+#else
+        painter.drawImage(draw_point, scaled_image);
+#endif
+#else
+        const QPoint target_loc   = QPoint(current_x + offset_x, current_y + offset_y);
+        const QRect  target_rect  = QRect(target_loc, scaled_image.size());
+        const QRect  source_rect  = QRect(0, 0, image.width(), image.height());
+
+#if OPTIMIZE_USE_PIXMAP
+        painter.drawPixmap(target_rect, image, source_rect);
+#else
+        painter.drawImage(target_rect, image, source_rect, Qt::AutoColor);
+#endif
+#endif
+        const std::uint32_t image_drawn_x = current_x;
+        const std::uint32_t image_drawn_y = current_y;
+        const std::uint32_t image_drawn_w = m_SpriteSheetFrameSize;
+        const std::uint32_t image_drawn_h = m_SpriteSheetFrameSize;
+
+        image_rects.emplace_back(image_drawn_x, image_drawn_y, image_drawn_w, image_drawn_h);
+
+        const QRect frame_rect = QRect(image_drawn_x + offset_x, image_drawn_y + offset_y, scaled_image.width(), scaled_image.height());
+
+#if 0
+          qDebug() << "frame_rects[" << frame_rects.size() << "] = " << frame_rect;
+          qDebug() << "target_rect = " << target_rect;
+#endif
+
+        frame_src->index = int(frame_rects.size());
+        frame_rects.emplace_back(frame_rect);
+
+        current_x += m_SpriteSheetFrameSize;
+
+        if (current_x >= atlas_width)
+        {
+          current_x = 0;
+          current_y += m_SpriteSheetFrameSize;
+        }
+
+        frame_to_index[abs_image_path] = current_frame;
+        ++current_frame;
+      }
+      else
+      {
+        QMessageBox::warning(&m_UI, "Error", "Failed to load image: \'" + abs_image_path + "\'");
+      }
+
+      progress.setValue(current_frame);
+    }
+
+    painter.end();
+
+    progress.setValue(progress.value() + 1);
+
+    m_Export.frame_to_index = std::move(frame_to_index);
+    m_Export.image          = atlas_image;
+    m_Export.pixmap         = QPixmap::fromImage(m_Export.image);
+
+    m_AtlasModified = false;
+
+    emit atlasModified(m_Export);
+
+    m_IsRegeneratingAtlas = false;
+  }
+}
+
+void Project::regenAnimationInfo()
+{
+  m_Export.atlas_data     = std::make_unique<QBuffer>();
+  QBuffer&    byte_buffer = *m_Export.atlas_data;
+  const auto& image_rects = m_Export.image_rectangles;
+  const int   num_images  = int(image_rects.size());
+
+  byte_buffer.open(QIODevice::WriteOnly);
+
+  // Write "SRSM" Header Chunk
+  {
+    const std::uint16_t data_offset         = 7;
+    const std::uint8_t  header_version      = 0;
+    const std::uint8_t  header_num_chunks   = 3;
+    const std::uint16_t header_atlas_width  = m_Export.image.width();
+    const std::uint16_t header_atlas_height = m_Export.image.height();
 
     byte_buffer.write("SRSM");
     byte_buffer.write((const char*)&data_offset, sizeof(data_offset));
     byte_buffer.write((const char*)&header_version, sizeof(header_version));
     byte_buffer.write((const char*)&header_num_chunks, sizeof(header_num_chunks));
+    byte_buffer.write((const char*)&header_atlas_width, sizeof(header_atlas_width));
+    byte_buffer.write((const char*)&header_atlas_height, sizeof(header_atlas_height));
+  }
 
-    // Write "FRME" Chunk
+  // Write "FRME" Chunk
+  {
+    const std::uint32_t frme_chunk_num_frames = std::uint32_t(num_images);
+    const std::uint32_t frme_chunk_size       = sizeof(std::uint32_t) + frme_chunk_num_frames * (sizeof(std::uint32_t) * 4);
+
+    byte_buffer.write("FRFM");
+    byte_buffer.write((const char*)&frme_chunk_size, sizeof(frme_chunk_size));
+    byte_buffer.write((const char*)&frme_chunk_num_frames, sizeof(frme_chunk_num_frames));
+
+    for (std::uint32_t i = 0; i < frme_chunk_num_frames; ++i)
     {
-      const std::uint32_t frfm_chunk_num_frames = std::uint32_t(num_images);
-      const std::uint32_t frfm_chunk_size       = sizeof(std::uint32_t) + frfm_chunk_num_frames * (sizeof(std::uint32_t) * 4);
+      const QRect& img_rect = image_rects[i];
 
-      byte_buffer.write("FRFM");
-      byte_buffer.write((const char*)&frfm_chunk_size, sizeof(frfm_chunk_size));
-      byte_buffer.write((const char*)&frfm_chunk_num_frames, sizeof(frfm_chunk_num_frames));
+      const uint32_t x = img_rect.x();
+      const uint32_t y = img_rect.y();
+      const uint32_t w = img_rect.width();
+      const uint32_t h = img_rect.height();
 
-      m_Export.frame_rects.clear();
-      frame_to_index.clear();
+      byte_buffer.write((const char*)&x, sizeof(x));
+      byte_buffer.write((const char*)&y, sizeof(y));
+      byte_buffer.write((const char*)&w, sizeof(w));
+      byte_buffer.write((const char*)&h, sizeof(h));
+    }
+  }
 
-      for (const QString& abs_image_path : loaded_images.keys())
+  // Write "ANIM" Chunk
+  {
+    const std::uint32_t num_animations  = std::uint32_t(m_AnimationList.rowCount());
+    const std::uint32_t anim_chunk_size = sizeof(std::uint32_t) + num_animations * (sizeof(std::uint32_t) + sizeof(float));
+
+    byte_buffer.write("ANIM");
+    byte_buffer.write((const char*)&anim_chunk_size, sizeof(anim_chunk_size));
+    byte_buffer.write((const char*)&num_animations, sizeof(num_animations));
+
+    for (std::uint32_t i = 0; i < num_animations; ++i)
+    {
+      Animation* const animation      = animationAt(i);
+      const QString    animation_name = animation->name();
+      const auto       anim_name_8bit = animation_name.toLocal8Bit();
+
+      const std::uint32_t name_length = std::uint32_t(animation_name.length());
+
+      byte_buffer.write((const char*)&name_length, sizeof(name_length));
+
+      byte_buffer.write(anim_name_8bit.data(), name_length);
+      byte_buffer.write("\0", 1);
+
+      const std::uint32_t num_frames = animation->numFrames();
+
+      byte_buffer.write((const char*)&num_frames, sizeof(num_frames));
+
+      for (std::uint32_t j = 0; j < num_frames; ++j)
       {
-        const QImage image(abs_image_path);
+        AnimationFrameInstance* const frame       = animation->frameAt(j);
+        const std::uint32_t           frame_index = m_Export.frame_to_index[frame->full_path()];
+        const float                   frame_time  = frame->frame_time;
 
-        if (!image.isNull())
-        {
-          const QImage scaled_image = image.scaled(m_SpriteSheetFrameSize - k_FramePadding, m_SpriteSheetFrameSize - k_FramePadding, Qt::KeepAspectRatio, Qt::SmoothTransformation);
-          const auto   offset_x     = (m_SpriteSheetFrameSize - scaled_image.width()) / 2;
-          const auto   offset_y     = (m_SpriteSheetFrameSize - scaled_image.height()) / 2;
-
-          painter.drawImage(QPoint(current_x + offset_x, current_y + offset_y), scaled_image);
-
-          const std::uint32_t image_drawn_x = current_x;
-          const std::uint32_t image_drawn_y = current_y;
-          const std::uint32_t image_drawn_w = m_SpriteSheetFrameSize;
-          const std::uint32_t image_drawn_h = m_SpriteSheetFrameSize;
-
-          byte_buffer.write((const char*)&image_drawn_x, sizeof(image_drawn_x));
-          byte_buffer.write((const char*)&image_drawn_y, sizeof(image_drawn_y));
-          byte_buffer.write((const char*)&image_drawn_w, sizeof(image_drawn_w));
-          byte_buffer.write((const char*)&image_drawn_h, sizeof(image_drawn_h));
-
-          m_Export.frame_rects.emplace_back(
-           image_drawn_x + offset_x,
-           image_drawn_y + offset_y,
-           scaled_image.width(),
-           scaled_image.height());
-
-          current_x += m_SpriteSheetFrameSize;
-
-          if (current_x >= m_SpriteSheetImageSize)
-          {
-            current_x = 0;
-            current_y += m_SpriteSheetFrameSize;
-          }
-
-          frame_to_index[abs_image_path] = current_frame;
-          ++current_frame;
-        }
-        else
-        {
-          QMessageBox::warning(&m_UI, "Error", "Failed to load image: \'" + abs_image_path + "\'");
-        }
-
-        progress.setValue(current_frame);
+        byte_buffer.write((const char*)&frame_index, sizeof(frame_index));
+        byte_buffer.write((const char*)&frame_time, sizeof(frame_time));
       }
     }
+  }
 
-    painter.end();
+  // Write "FOOT" chunk
+  {
+    const std::uint32_t foot_chunk_size = 0;
 
-    // Write "ANIM" Chunk
+    byte_buffer.write("FOOT");
+    byte_buffer.write((const char*)&foot_chunk_size, sizeof(foot_chunk_size));
+  }
+
+  if (g_Server)
+  {
+    if (m_EditUUID.isNull())
     {
-      const std::uint32_t num_animations  = std::uint32_t(m_AnimationList.rowCount());
-      const std::uint32_t anim_chunk_size = sizeof(std::uint32_t) + num_animations * (sizeof(std::uint32_t) + sizeof(float));
-
-      byte_buffer.write("ANIM");
-      byte_buffer.write((const char*)&anim_chunk_size, sizeof(anim_chunk_size));
-      byte_buffer.write((const char*)&num_animations, sizeof(num_animations));
-
-      for (std::uint32_t i = 0; i < num_animations; ++i)
-      {
-        Animation* const animation      = animationAt(i);
-        const QString    animation_name = animation->name();
-        const auto       anim_name_8bit = animation_name.toLocal8Bit();
-
-        const std::uint32_t name_length = std::uint32_t(animation_name.length());
-
-        byte_buffer.write((const char*)&name_length, sizeof(name_length));
-
-        byte_buffer.write(anim_name_8bit.data(), name_length);
-        byte_buffer.write("\0", 1);
-
-        const std::uint32_t num_frames = std::uint32_t(animation->frame_list.rowCount());
-
-        byte_buffer.write((const char*)&num_frames, sizeof(num_frames));
-
-        for (std::uint32_t j = 0; j < num_frames; ++j)
-        {
-          AnimationFrame* const frame       = animation->frameAt(j);
-          const std::uint32_t   frame_index = frame_to_index[frame->full_path()];
-          const float           frame_time  = frame->frame_time();
-
-          byte_buffer.write((const char*)&frame_index, sizeof(frame_index));
-          byte_buffer.write((const char*)&frame_time, sizeof(frame_time));
-        }
-      }
+      m_EditUUID = QUuid::createUuid();
     }
 
-    // Write "FOOT" chunk
-    {
-      const std::uint32_t foot_chunk_size = 0;
+    const QString    guid_str  = m_EditUUID.toString(QUuid::WithoutBraces);
+    const QByteArray guid_cstr = guid_str.toLocal8Bit();
 
-      byte_buffer.write("FOOT");
-      byte_buffer.write((const char*)&foot_chunk_size, sizeof(foot_chunk_size));
-    }
-
-    progress.setValue(progress.value() + 1);
-
-    m_Export.image  = std::move(atlas_image);
-    m_Export.pixmap = QPixmap::fromImage(m_Export.image);
-
-    m_AtlasModified = false;
-
-    emit atlasModified(m_Export);
-    m_IsRegeneratingAtlas = false;
+    g_Server->sendAnimChangedPacket(guid_cstr.data());
   }
 }
 

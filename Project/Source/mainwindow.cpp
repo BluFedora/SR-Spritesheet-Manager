@@ -3,34 +3,21 @@
 // Copyright (c) 2020 Shareef Aboudl-Raheem
 //
 
-#include "mainwindow.h"
+#include "mainwindow.hpp"
 
+#include "Data/srsm_settings.hpp"
 #include "UI/sr_welcome_window.hpp"
 #include "UI/srsm_timeline.hpp"
 #include "newanimation.hpp"
 
-#include <QCollator>
-#include <QDebug>
+#include <QCloseEvent>
 #include <QFileDialog>
-#include <QGraphicsPixmapItem>
-#include <QInputDialog>
-#include <QJsonArray>
-#include <QJsonDocument>
-#include <QJsonObject>
-#include <QMenu>
 #include <QMessageBox>
-#include <QPainter>
-#include <QProgressDialog>
-#include <QStringListModel>
-#include <iostream>
-
-#include <cmath>
 
 MainWindow::MainWindow(const QString& name, QWidget* parent) :
   QMainWindow(parent),
   m_BaseTitle{},
-  m_OpenProject{std::make_unique<Project>(this, name)}  //,
-//m_AnimationContext{}
+  m_OpenProject{std::make_unique<Project>(this, name)}
 {
   setupUi(this);
 
@@ -45,66 +32,76 @@ MainWindow::MainWindow(const QString& name, QWidget* parent) :
   m_AnimationList->setModel(&m_OpenProject->animations());
   m_OpenProject->setup(m_ImageLibrary);
 
-  onProjectRenamed(m_OpenProject->name());
-
   QObject::connect(m_TimelineFrameSizeSlider, &QSlider::valueChanged, m_TimelineFrames, &Timeline::onFrameSizeChanged);
   QObject::connect(m_TimelineFpsSpinbox, &QSpinBox::valueChanged, m_OpenProject.get(), &Project::onTimelineFpsChange);
   QObject::connect(m_OpenProject.get(), &Project::atlasModified, m_TimelineFrames, &Timeline::onAtlasUpdated);
+  QObject::connect(m_OpenProject.get(), &Project::atlasModified, m_GfxPreview, &AnimationPreview::onAtlasUpdated);
   QObject::connect(m_OpenProject.get(), &Project::animationChanged, m_TimelineFrames, &Timeline::onAnimationChanged);
   QObject::connect(m_OpenProject.get(), &Project::animationSelected, m_TimelineFrames, &Timeline::onAnimationSelected);
-  QObject::connect(m_OpenProject.get(), &Project::animationSelected, m_FrameList, &FrameListView::onSelectAnimation);
   QObject::connect(m_OpenProject.get(), &Project::animationSelected, m_GfxPreview, &AnimationPreview::onAnimationSelected);
   QObject::connect(m_ActionImageLibraryNewFolder, &QAction::triggered, m_OpenProject.get(), &Project::onCreateNewFolder);
   QObject::connect(m_ActionImportImages, &QAction::triggered, m_OpenProject.get(), &Project::onImportImages);
   QObject::connect(m_OpenProject.get(), &Project::renamed, this, &MainWindow::onProjectRenamed);
-  QObject::connect(m_AnimationList, &QListView::customContextMenuRequested, this, &MainWindow::onAnimationRightClick);
 
-  static bool s_IsPlaying = true;
+  QObject::connect(m_AnimationList, &QListView::customContextMenuRequested, this, &MainWindow::onAnimationRightClick);
+  QObject::connect(m_AnimationList->selectionModel(), &QItemSelectionModel::currentRowChanged, this, &MainWindow::onAnimationSelectionChanged);
+
+  auto& undo_stack = m_OpenProject->historyStack();
+
+  auto edit_menu   = new QMenu(tr("&Edit"), this);
+  auto undo_action = undo_stack.createUndoAction(this, tr("&Undo"));
+  auto redo_action = undo_stack.createRedoAction(this, tr("&Redo"));
+
+  QMainWindow::menuBar()->insertMenu(menuImageLibrary->menuAction(), edit_menu);
+
+  auto window_menu = new QMenu(tr("&Window"), this);
+
+  window_menu->addAction(m_DockImageLibraryView->toggleViewAction());
+  window_menu->addAction(m_DockTimelineView->toggleViewAction());
+  window_menu->addAction(m_AnimationListDock->toggleViewAction());
+  window_menu->addAction(m_DockPropertyView->toggleViewAction());
+  window_menu->addAction(m_DockHistoryView->toggleViewAction());
+
+  QMainWindow::menuBar()->insertMenu(menuAbout->menuAction(), window_menu);
+
+  undo_action->setShortcuts(QKeySequence::Undo);
+  redo_action->setShortcuts(QKeySequence::Redo);
+
+  edit_menu->addAction(undo_action);
+  edit_menu->addAction(redo_action);
 
   m_TimelinePlayButton->setIcon(style()->standardIcon(QStyle::SP_MediaPlay));
 
   QObject::connect(m_TimelinePlayButton, &QToolButton::clicked, [this]() {
-    s_IsPlaying = !s_IsPlaying;
-    m_TimelinePlayButton->setIcon(s_IsPlaying ? style()->standardIcon(QStyle::SP_MediaPlay) : style()->standardIcon(QStyle::SP_MediaPause));
+    m_GfxPreview->onTogglePlayAnimation();
+    m_TimelinePlayButton->setIcon(m_GfxPreview->isPlayingAnimation() ? style()->standardIcon(QStyle::SP_MediaPause) : style()->standardIcon(QStyle::SP_MediaPlay));
   });
 
-#if 0
-  bfAnimation2DCreateParams anim_params;
-  anim_params.allocator = nullptr;
-
-  bfAnimation2D_ctor(&m_AnimationContext, &anim_params);
-
-  m_GfxPreview->setContext(&m_AnimationContext);
-#endif
+  restoreWindowLayout();
 }
 
-MainWindow::~MainWindow()
+void MainWindow::postLoadInit()
 {
-  //bfAnimation2D_dtor(&m_AnimationContext);
+  onProjectRenamed(m_OpenProject->name());
+  m_QualitySpritesheetSize->setValue(m_OpenProject->spritesheetImageSize());
+  m_QualityFrameSize->setValue(m_OpenProject->spritesheetFrameSize());
+
+  QObject::connect(m_QualitySpritesheetSize, &QSpinBox::editingFinished, this, &MainWindow::onSpritesheetQualitySettingChanged);
+  QObject::connect(m_QualityFrameSize, &QSpinBox::editingFinished, this, &MainWindow::onSpritesheetQualitySettingChanged);
 }
 
 /*
   new_image.save(imagePath, "PNG");
-
-  QFile jsonFile(jsonPath);
-  jsonFile.open(QFile::WriteOnly);
-  jsonFile.write(QJsonDocument(spritesheetData).toJson());
-  jsonFile.close();
 */
 
 void MainWindow::onProjectRenamed(const QString& name)
 {
-  setWindowTitle(name + "[*] - " + m_BaseTitle);
-}
-
-void MainWindow::onAnimationSelected(QModelIndex index)
-{
-  m_OpenProject->selectAnimation(index);
+  setWindowTitle(name + m_BaseTitle);
 }
 
 void MainWindow::onSaveProject()
 {
-  m_OpenProject->save(this);
+  m_OpenProject->save();
 }
 
 void MainWindow::onAnimationNew()
@@ -162,8 +159,18 @@ void MainWindow::onAnimationRightClick(const QPoint& pos)
 
 void MainWindow::onShowWelcomeScreen()
 {
-  WelcomeWindow* const welcome_window = new WelcomeWindow();
-  welcome_window->show();
+  (new WelcomeWindow())->show();
+}
+
+void MainWindow::onSpritesheetQualitySettingChanged()
+{
+  m_OpenProject->setSpritesheetImageSize(m_QualitySpritesheetSize->value());
+  m_OpenProject->setSpritesheetFrameSize(m_QualityFrameSize->value());
+}
+
+void MainWindow::onAnimationSelectionChanged(const QModelIndex& current, const QModelIndex& /* previous */)
+{
+  m_OpenProject->selectAnimation(current);
 }
 
 void MainWindow::changeEvent(QEvent* e)
@@ -183,4 +190,69 @@ void MainWindow::changeEvent(QEvent* e)
 void MainWindow::on_m_ActionAboutQt_triggered()
 {
   QMessageBox::aboutQt(this, "About Qt");
+}
+
+void MainWindow::closeEvent(QCloseEvent* event)
+{
+  Settings settings;
+
+  settings.setValue("MainWindow/geometry", saveGeometry());
+  settings.setValue("MainWindow/windowState", saveState());
+
+  if (isWindowModified())
+  {
+    const QMessageBox::StandardButton res_btn = QMessageBox::question(this, windowTitle(), tr("You have unsaved changes would you like to save?\n"), QMessageBox::Cancel | QMessageBox::No | QMessageBox::Yes, QMessageBox::Yes);
+
+    if (res_btn == QMessageBox::Yes)
+    {
+      if (m_OpenProject->save())
+      {
+        event->accept();
+      }
+      else
+      {
+        QMessageBox::warning(this, "Warning", "Failed to save project.", QMessageBox::Ok, QMessageBox::Ok);
+        event->ignore();
+      }
+    }
+    else if (res_btn == QMessageBox::Cancel)
+    {
+      event->ignore();
+    }
+    else if (res_btn == QMessageBox::No)
+    {
+      event->accept();
+    }
+    else
+    {
+      event->ignore();
+    }
+  }
+  else
+  {
+    event->accept();
+  }
+}
+
+void MainWindow::restoreWindowLayout()
+{
+  Settings settings;
+
+  restoreGeometry(settings.value("MainWindow/geometry").toByteArray());
+  restoreState(settings.value("MainWindow/windowState").toByteArray());
+
+  restoreDockWidget(m_DockImageLibraryView);
+  restoreDockWidget(m_DockTimelineView);
+  restoreDockWidget(m_AnimationListDock);
+  restoreDockWidget(m_DockPropertyView);
+  restoreDockWidget(m_DockHistoryView);
+}
+
+void MainWindow::on_m_ActionExportSpritesheet_triggered()
+{
+  const QString export_dir = QFileDialog::getExistingDirectory(this, "Export Location", QString());
+
+  if (!export_dir.isEmpty())
+  {
+  }
 }

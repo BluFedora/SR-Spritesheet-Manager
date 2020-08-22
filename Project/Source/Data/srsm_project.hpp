@@ -9,14 +9,16 @@
 #ifndef SRSM_PROJECT_HPP
 #define SRSM_PROJECT_HPP
 
-//#include "bifrost_sprite_animation_api.h"
 #include "srsm_animation.hpp"
 
-#include <QBuffer>      //QBuffer
+#include "main.hpp"  // g_Server
+
+#include <QBuffer>      // QBuffer
 #include <QDir>         // QDir
 #include <QJsonObject>  // QJsonObject
 #include <QString>      // QString
 #include <QUndoStack>   // QUndoStack
+#include <QUuid>        // QUuid
 
 #include <memory>  // unique_ptr<T>
 #include <vector>  // vector<T>
@@ -27,39 +29,52 @@ class MainWindow;
 
 struct AtlasExport final
 {
-  QPixmap                      pixmap;      //!< For fast drawing.
-  QImage                       image;       //!< For fast manipulation.
-  std::unique_ptr<QBuffer>     atlas_data;  //!< For saving.
-  std::vector<QRect>           frame_rects;
-  QMap<QString, std::uint32_t> abs_path_to_index;
+  QPixmap                      pixmap;            //!< For fast drawing.
+  QImage                       image;             //!< For fast manipulation.
+  std::unique_ptr<QBuffer>     atlas_data;        //!< For saving.
+  std::vector<QRect>           image_rectangles;  //!< For regenerating the the atlas.
+  QMap<QString, std::uint32_t> frame_to_index;    //!<
 };
 
 using ProjectPtr = std::unique_ptr<Project>;
+
+enum UndoActionFlag
+{
+  UndoActionFlag_ModifiedSettings  = (1u << 0),
+  UndoActionFlag_ModifiedAnimation = (1u << 1),
+  UndoActionFlag_ModifiedAtlas     = (1u << 2),
+  UndoActionFlag_ModifiedAll       = UndoActionFlag_ModifiedSettings | UndoActionFlag_ModifiedAtlas | UndoActionFlag_ModifiedAnimation,
+  UndoActionFlag_FirstTime         = (1u << 3),
+};
+
+Q_DECLARE_FLAGS(UndoActionFlags, UndoActionFlag)
+Q_DECLARE_OPERATORS_FOR_FLAGS(UndoActionFlags)
 
 template<typename FRedo>
 class UndoAction final : public QUndoCommand
 {
  private:
-  Project*    m_Project;
-  QJsonObject m_SerializedState;
-  bool        m_FirstTime;
+  Project*        m_Project;
+  QJsonObject     m_SerializedState;
+  UndoActionFlags m_Flags;
 
  public:
-  UndoAction(Project* project, FRedo&& do_action);
+  UndoAction(Project* project, UndoActionFlags flags, FRedo&& do_action);
 
-  void undo() override
+  void undo() override final
   {
     swapStates();
   }
 
-  void redo() override
+  void redo() override final
   {
-    if (!m_FirstTime)
+    if (m_Flags.testFlag(UndoActionFlag_FirstTime))
     {
-      swapStates();
+      m_Flags.setFlag(UndoActionFlag_FirstTime, false);
+      return;
     }
 
-    m_FirstTime = false;
+    swapStates();
   }
 
  private:
@@ -72,6 +87,7 @@ class Project final : public QObject
 
  private:
   QString               m_Name;
+  QUuid                 m_EditUUID;
   std::unique_ptr<QDir> m_ProjectFile;
   ImageLibrary*         m_ImageLibrary;
   QUndoStack*           m_HistoryStack;
@@ -79,7 +95,6 @@ class Project final : public QObject
   MainWindow&           m_UI;
   AtlasExport           m_Export;
   int                   m_SelectedAnimation;
-  int                   m_SelectedFrame;
   unsigned int          m_SpriteSheetImageSize;
   unsigned int          m_SpriteSheetFrameSize;
   bool                  m_AtlasModified;
@@ -88,22 +103,33 @@ class Project final : public QObject
  public:
   explicit Project(MainWindow* main_window, const QString& name);
 
+  // Accessors
+
+  const QString&      name() const { return m_Name; }
+  bool                hasPath() const { return m_ProjectFile != nullptr; }
+  QDir                projectFolder() const { return m_ProjectFile ? *m_ProjectFile : QDir(""); }
+  QUndoStack&         historyStack() const { return *m_HistoryStack; }
+  QStandardItemModel& animations() { return m_AnimationList; }
+  unsigned int        spritesheetImageSize() const { return m_SpriteSheetImageSize; }
+  unsigned int        spritesheetFrameSize() const { return m_SpriteSheetFrameSize; }
+
+  // Undo-able Document Action API
+
   template<typename FRedo>
-  void recordAction(const QString& name, FRedo&& callback)
+  void recordAction(const QString& name, UndoActionFlags flags, FRedo&& callback)
   {
-    recordActionImpl(name, new UndoAction<FRedo>(this, std::forward<FRedo>(callback)));
+    recordActionImpl(name, new UndoAction<FRedo>(this, flags | UndoActionFlag_FirstTime, std::forward<FRedo>(callback)));
   }
 
-  // Undo-able Document Actions
   void newAnimation(const QString& name, int frame_rate);
   void selectAnimation(QModelIndex index);
+  void selectAnimation(int index);
   void removeAnimation(QModelIndex index);
   void importImageUrls(const QList<QUrl>& urls);
 
   //
 
   void notifyAnimationChanged(Animation* animation);
-  void markAtlasModifed();
 
  signals:
   void animationChanged(Animation* anim);
@@ -115,24 +141,25 @@ class Project final : public QObject
   void onTimelineFpsChange(int value);
   void onCreateNewFolder();
   void onImportImages();
+  void setSpritesheetImageSize(int value);
+  void setSpritesheetFrameSize(int value);
+  void setProjectName(const QString& value);
 
  private slots:
   void regenExport();
+  void regenAnimationInfo();
+  void markAtlasModifed();
+  void markAnimationsModifed();
 
  public:
-  const QString&      name() const { return m_Name; }
-  bool                hasPath() const { return m_ProjectFile != nullptr; }
-  QDir                projectFolder() const { return m_ProjectFile ? *m_ProjectFile : QDir(""); }
-  QUndoStack&         historyStack() const { return *m_HistoryStack; }
-  QStandardItemModel& animations() { return m_AnimationList; }
-
   void setup(ImageLibrary* img_library);
 
   bool        open(const QString& file_path);
-  bool        save(QWidget* parent);
+  bool        save();
   QJsonObject serialize();
-  bool        deserialize(const QJsonObject& data);
+  bool        deserialize(const QJsonObject& data, UndoActionFlags flags = UndoActionFlag_ModifiedAll);
 
+  int        numAnimations() const;
   Animation* animationAt(int index);
   Animation* animationAt(QModelIndex index);
 
@@ -140,6 +167,7 @@ class Project final : public QObject
   // Document Actions without the Undo stack
 
   void newAnimationRaw(const QString& name, int frame_rate);
+  void setProjectNameRaw(const QString& new_name);
 
   // Helpers
 
@@ -148,11 +176,11 @@ class Project final : public QObject
 };
 
 template<typename FRedo>
-UndoAction<FRedo>::UndoAction(Project* project, FRedo&& do_action) :
+UndoAction<FRedo>::UndoAction(Project* project, UndoActionFlags flags, FRedo&& do_action) :
   QUndoCommand(),
   m_Project{project},
   m_SerializedState{},
-  m_FirstTime{true}
+  m_Flags{flags}
 {
   m_SerializedState = m_Project->serialize();
   do_action();
@@ -162,16 +190,8 @@ template<typename FRedo>
 void UndoAction<FRedo>::swapStates()
 {
   auto right_before_restore = m_Project->serialize();
-  m_Project->deserialize(m_SerializedState);
+  m_Project->deserialize(m_SerializedState, m_Flags);
   m_SerializedState = std::move(right_before_restore);
-}
-
-template<typename FRedo>
-inline UndoAction<FRedo>* makeUndoAction(Project* project, const QString& name, FRedo&& callback)
-{
-  UndoAction<FRedo>* const action = new UndoAction<FRedo>(project, std::forward<FRedo>(callback));
-  action->setText(name);
-  return action;
 }
 
 #endif  // SRSM_PROJECT_HPP

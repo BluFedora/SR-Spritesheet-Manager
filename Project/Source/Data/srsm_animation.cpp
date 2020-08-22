@@ -8,65 +8,44 @@
 
 #include "srsm_animation.hpp"
 
-#include "Data/srsm_project.hpp"  // Project
+#include "Data/srsm_project.hpp"      // Project
+#include "UI/srsm_image_library.hpp"  // AnimationFrameSourcePtr
 
-AnimationFrame::AnimationFrame(const QString& rel_path, const QString& full_path, float frame_time) :
-  QStandardItem(rel_path)
+#include <QDebug>
+
+AnimationFrameInstance::AnimationFrameInstance(AnimationFrameSourcePtr anim_source, float frame_time) :
+  source{anim_source},
+  frame_time{frame_time}
 {
-  setFlags(flags() & ~(Qt::ItemIsDropEnabled | Qt::ItemIsEditable));
-  setData(rel_path, Qt::UserRole + 1);
-  setData(full_path, Qt::UserRole + 2);
-  setData(frame_time, Qt::UserRole + 3);
 }
 
-QStandardItem* AnimationFrame::clone() const
+QString AnimationFrameInstance::full_path() const
 {
-  return new AnimationFrame(rel_path(), full_path(), frame_time());
-}
-
-int AnimationFrame::type() const
-{
-  return UserType;
+  return source->full_path;
 }
 
 Animation::Animation(Project* parent, const QString& name, int fps) :
   QStandardItem(name),
   parent{parent},
+  frames{},
   frame_rate{fps},
-  frame_list{}
+  previewed_frame{0}
 {
-  frame_list.setItemPrototype(new AnimationFrame("", "", 0.0f));
 }
 
-void Animation::addFrame(const QString& rel_path, const QString& full_path)
+void Animation::addFrame(AnimationFrameSourcePtr anim_source)
 {
-  addFrame(new AnimationFrame(rel_path, full_path, 1.0f / float(frame_rate)));
+  frames.emplace_back(anim_source, 1.0f / float(frame_rate));
 }
 
-void Animation::addFrame(AnimationFrame* frame)
+void Animation::addFrame(AnimationFrameInstance frame)
 {
-  frame_list.appendRow(frame);
+  frames.push_back(std::move(frame));
 }
 
-AnimationFrame* Animation::frameAt(int index) const
+AnimationFrameInstance* Animation::frameAt(int index)
 {
-  return dynamic_cast<AnimationFrame*>(frame_list.item(index, 0));
-}
-
-void Animation::swapFrames(int a, int b)
-{
-  Q_ASSERT(a != b);
-
-  if (a > b)
-  {
-    std::swap(a, b);
-  }
-
-  auto item_a = frame_list.takeRow(a)[0];
-  auto item_b = frame_list.takeRow(b - 1)[0];
-
-  frame_list.insertRow(a, item_b);
-  frame_list.insertRow(b, item_a);
+  return &frames.at(index);
 }
 
 void Animation::notifyChanged()

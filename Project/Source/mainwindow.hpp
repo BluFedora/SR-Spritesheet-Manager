@@ -10,45 +10,52 @@
 
 #include "Data/srsm_project.hpp"  // ProjectPtr
 
-// #include "bifrost_sprite_animation_api.h"
-
 #include <QJsonObject>
 #include <QStringListModel>
 
 #include <memory>
 #include <vector>
 
-class MainWindow : public QMainWindow
-  , private Ui::MainWindow
+// clang-format off
+class MainWindow : public QMainWindow, private Ui::MainWindow
+// clang-format on
 {
   Q_OBJECT
 
  private:
   QString    m_BaseTitle;
   ProjectPtr m_OpenProject;
-  //BifrostAnimation2DCtx m_AnimationContext;
 
  public:
   explicit MainWindow(const QString& name, QWidget* parent = 0);
 
+  void postLoadInit();
+
   ProjectPtr& project() { return m_OpenProject; }
   QSpinBox&   timelineFpsSpinbox() const { return *m_TimelineFpsSpinbox; }
-
-  ~MainWindow();
+  QListView&  animationListView() const { return *m_AnimationList; }
+  // FrameListView& frameListView() const { return *m_FrameList; }
 
  public slots:
   void onProjectRenamed(const QString& name);
-  void onAnimationSelected(QModelIndex index);
   void onSaveProject();
   void onAnimationNew();
   void onAnimationRightClick(const QPoint& pos);
   void onShowWelcomeScreen();
+  void onSpritesheetQualitySettingChanged();
+  void onAnimationSelectionChanged(const QModelIndex& current, const QModelIndex& previous);
 
+  // QWidget interface
  protected:
-  void changeEvent(QEvent* e);
+  void changeEvent(QEvent* e) override;
+  void closeEvent(QCloseEvent* event) override;
 
  private slots:
   void on_m_ActionAboutQt_triggered();
+  void on_m_ActionExportSpritesheet_triggered();
+
+ private:
+  void restoreWindowLayout();
 };
 
 #endif  // MAINWINDOW_H
