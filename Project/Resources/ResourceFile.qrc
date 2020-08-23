@@ -7,5 +7,6 @@
         <file>Images/Runtime/no-animation-selected.png</file>
         <file>Images/Runtime/bg-grid.png</file>
         <file>Images/Icons/x_button.png</file>
+        <file>Images/Runtime/no-frames-in-animation.png</file>
     </qresource>
 </RCC>

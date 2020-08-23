@@ -18,9 +18,7 @@
 #include <QSharedMemory  >  // QSharedMemory
 #include <QStyleFactory>    // QStyleFactory
 
-#include "main.hpp"
-
-std::unique_ptr<LiveReloadServer> g_Server;
+#include "main.hpp"  // g_Server
 
 /*!
  * @brief main
@@ -94,6 +92,7 @@ int main(int argc, char *argv[])
 
   if (!g_Server || !g_Server->startServer())
   {
+    g_Server = nullptr;
     QMessageBox::warning(nullptr, "Error", "Failed to create a local sevrer. Connect to engine functionality will be disabled.", QMessageBox::Ok, QMessageBox::Ok);
   }
   else
@@ -115,3 +114,5 @@ int main(int argc, char *argv[])
 
   return app_result;
 }
+
+std::unique_ptr<LiveReloadServer> g_Server;

@@ -64,10 +64,6 @@ struct FrameInfoAtPoint
   FrameDragMode drag_mode        = FrameDragMode::None;
 };
 
-struct FrameDropInfoAtPoint final : public FrameInfoAtPoint
-{
-};
-
 //
 // Timeline Operations
 // - Resize Frame timing
@@ -89,9 +85,10 @@ struct TimelineSelectionItem final
 
 struct TimelineSelection final
 {
-  std::set<int>         selection        = {};
-  int                   pivot_index      = 0;
-  TimelineSelectionItem active_selection = {-1, -1};
+  std::set<int>         selection             = {};
+  int                   pivot_index           = 0;
+  TimelineSelectionItem active_selection      = {-1, -1};
+  mutable std::set<int> fully_ordered_indices = {};  // A small cache for 'forEachSelectedItem<bool, F>'.
 
   bool isEmpty() const;
   void clear();
@@ -99,23 +96,29 @@ struct TimelineSelection final
   void extendClick(int item);
   bool isSelected(int item) const;
 
-  template<typename F>
+  //
+  // Goes from least to greatest order unless reversed_iteration is set to true.
+  //
+  template<bool reversed_iteration = false, typename F>
   void forEachSelectedItem(F&& f) const
   {
-    for (int item : selection)
-    {
-      f(item);
-    }
+    fully_ordered_indices = selection;
 
     if (active_selection.isValid())
     {
       for (int item = active_selection.start_idx; item <= active_selection.end_idx; ++item)
       {
-        if (selection.find(item) == selection.end())
-        {
-          f(item);
-        }
+        fully_ordered_indices.insert(item);
       }
+    }
+
+    if constexpr (reversed_iteration)
+    {
+      std::for_each(fully_ordered_indices.rbegin(), fully_ordered_indices.rend(), std::forward<F>(f));
+    }
+    else
+    {
+      std::for_each(fully_ordered_indices.begin(), fully_ordered_indices.end(), std::forward<F>(f));
     }
   }
 
@@ -156,11 +159,15 @@ class Timeline final : public QWidget
     bool m_ResizedFrame;
   };
 
+  // Mouse Interaction Code
+
   TimelineSelection m_Selection;
   FrameInfoAtPoint  m_ActiveDraggedItem;
   FrameInfoAtPoint  m_HoveredDraggedItem;
   FrameInfoAtPoint  m_ReorderDropLocation;
   QPoint            m_MouseDownLocation;
+  QRect             m_ScrubberTrackRect;
+  bool              m_IsDraggingScrubber;
   QTimer            m_UpdateTimer;
 
  public:
@@ -174,6 +181,9 @@ class Timeline final : public QWidget
   void onAtlasUpdated(AtlasExport& atlas);
   void onTimerTick();
 
+ private slots:
+  void onCustomCtxMenu(const QPoint& pos);
+
   // QWidget interface
  protected:
   void paintEvent(QPaintEvent* event) override;
@@ -186,19 +196,16 @@ class Timeline final : public QWidget
   void dragMoveEvent(QDragMoveEvent* event) override;
   void dragLeaveEvent(QDragLeaveEvent* event) override;
   void dropEvent(QDropEvent* event) override;
-
-  // QObject interface
- public:
-  bool eventFilter(QObject* watched, QEvent* event) override;
+  void keyPressEvent(QKeyEvent* event) override;
 
  private:
-  void                 recalculateTimelineSize();
-  void                 calculateDesiredLayout(bool use_selected_items);
-  void                 copyOverAnimtionData();
-  int                  numFrames() const;
-  void                 drawFrame(const QPixmap& atlas_image, QPainter& painter, int index);
-  FrameInfoAtPoint     infoAt(const QPoint& local_mouse_pos, bool allow_active_item) const;
-  FrameDropInfoAtPoint dropInfoAt(const QPoint& local_mouse_pos);  // Uses 'logical' frame positioning rather than 'physical' layout
+  void             recalculateTimelineSize();
+  void             calculateDesiredLayout(bool use_selected_items);
+  int              numFrames() const;
+  void             drawFrame(const QPixmap& atlas_image, QPainter& painter, int index);
+  FrameInfoAtPoint infoAt(const QPoint& local_mouse_pos, bool allow_active_item) const;
+  FrameInfoAtPoint dropInfoAt(const QPoint& local_mouse_pos);  // Uses 'logical' frame positioning rather than 'physical' layout
+  bool             removeSelectedFrames();
 };
 
 #endif  // SRSM_TIMELINE_HPP

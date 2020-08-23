@@ -37,25 +37,28 @@ enum ImageLibraryRole
   FrameSource  = Qt::UserRole + 1,
 };
 
+struct ItemToDeleteInfo final
+{
+  QString                 frame_name;
+  std::vector<Animation*> animations;
+};
+
 class ImageLibrary : public QTreeWidget
 {
   Q_OBJECT
 
   friend class Project;
 
-  // TODO(SR): m_LoadedImages and m_AbsToFrameSrc can be merged tbh.
-
  private:
   Project*                               m_Project;
-  QMap<QString, QString>                 m_LoadedImages;
   QFileSystemWatcher                     m_FileWatcher;
   QMap<QString, AnimationFrameSourcePtr> m_AbsToFrameSrc;
 
  public:
   ImageLibrary(QWidget* parent);
 
-  int                           numImages() const { return m_LoadedImages.uniqueKeys().size(); }
-  const QMap<QString, QString>& loadedImages() const { return m_LoadedImages; }
+  int                                           numImages() const { return m_AbsToFrameSrc.uniqueKeys().size(); }
+  const QMap<QString, AnimationFrameSourcePtr>& loadedImages() const { return m_AbsToFrameSrc; }
 
   QJsonObject             serialize(Project& project);
   void                    deserialize(Project& project, const QJsonObject& data);
@@ -72,6 +75,7 @@ class ImageLibrary : public QTreeWidget
  private slots:
   void onCustomCtxMenu(const QPoint& pos);
   void onFileWatcherDirOrFile(const QString& path);
+  bool removeSelectedItems();
 
   // QWidget interface
  protected:
@@ -84,6 +88,7 @@ class ImageLibrary : public QTreeWidget
   QJsonObject serializeImpl(Project& project, QTreeWidgetItem* item);
   void        deserializeImpl(Project& project, QTreeWidgetItem* parent, const QJsonObject& data);
   void        addImage(QTreeWidgetItem* parent, const QString& img_path, bool emit_signal = true);
+  void        checkForFramesInUse(QTreeWidgetItem* item, std::vector<ItemToDeleteInfo>& items_to_delete_info, std::unordered_map<Animation*, std::vector<int>>& anim_to_frames_to_delete);
 };
 
 #endif  // SRSM_IMAGELIBRARY_HPP

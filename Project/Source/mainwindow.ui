@@ -53,6 +53,12 @@
     </property>
     <item row="1" column="0">
      <widget class="AnimationPreview" name="m_GfxPreview">
+      <property name="sizePolicy">
+       <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+        <horstretch>0</horstretch>
+        <verstretch>0</verstretch>
+       </sizepolicy>
+      </property>
       <property name="frameShape">
        <enum>QFrame::Panel</enum>
       </property>
@@ -82,6 +88,12 @@
    </layout>
   </widget>
   <widget class="QDockWidget" name="m_DockImageLibraryView">
+   <property name="sizePolicy">
+    <sizepolicy hsizetype="Preferred" vsizetype="Expanding">
+     <horstretch>0</horstretch>
+     <verstretch>0</verstretch>
+    </sizepolicy>
+   </property>
    <property name="features">
     <set>QDockWidget::AllDockWidgetFeatures</set>
    </property>
@@ -164,6 +176,12 @@
    </widget>
   </widget>
   <widget class="QDockWidget" name="m_AnimationListDock">
+   <property name="sizePolicy">
+    <sizepolicy hsizetype="Preferred" vsizetype="Expanding">
+     <horstretch>0</horstretch>
+     <verstretch>0</verstretch>
+    </sizepolicy>
+   </property>
    <property name="features">
     <set>QDockWidget::AllDockWidgetFeatures</set>
    </property>
@@ -256,6 +274,7 @@
     </property>
     <addaction name="m_ActionImageLibraryNewFolder"/>
     <addaction name="m_ActionImportImages"/>
+    <addaction name="m_ActionRemoveImages"/>
    </widget>
    <widget class="QMenu" name="menuProject">
     <property name="title">
@@ -290,7 +309,7 @@
   </widget>
   <widget class="QDockWidget" name="m_DockTimelineView">
    <property name="sizePolicy">
-    <sizepolicy hsizetype="MinimumExpanding" vsizetype="MinimumExpanding">
+    <sizepolicy hsizetype="MinimumExpanding" vsizetype="Preferred">
      <horstretch>0</horstretch>
      <verstretch>0</verstretch>
     </sizepolicy>
@@ -362,6 +381,9 @@
          </item>
          <item row="1" column="0" colspan="8">
           <widget class="QScrollArea" name="m_Timeline">
+           <property name="lineWidth">
+            <number>2</number>
+           </property>
            <property name="verticalScrollBarPolicy">
             <enum>Qt::ScrollBarAlwaysOff</enum>
            </property>
@@ -382,8 +404,8 @@
              <rect>
               <x>0</x>
               <y>0</y>
-              <width>675</width>
-              <height>159</height>
+              <width>1268</width>
+              <height>68</height>
              </rect>
             </property>
             <property name="sizePolicy">
@@ -455,10 +477,10 @@
             </size>
            </property>
            <property name="minimum">
-            <number>50</number>
+            <number>40</number>
            </property>
            <property name="maximum">
-            <number>200</number>
+            <number>400</number>
            </property>
            <property name="value">
             <number>100</number>
@@ -508,7 +530,7 @@
     <string>Property View</string>
    </property>
    <attribute name="dockWidgetArea">
-    <number>8</number>
+    <number>2</number>
    </attribute>
    <widget class="QWidget" name="dockWidgetContents_2">
     <property name="sizePolicy">
@@ -644,7 +666,7 @@
     <string>History View</string>
    </property>
    <attribute name="dockWidgetArea">
-    <number>8</number>
+    <number>1</number>
    </attribute>
    <widget class="QWidget" name="dockWidgetContents_4">
     <layout class="QGridLayout" name="gridLayout_5">
@@ -760,6 +782,11 @@
     <string>Ctrl+E</string>
    </property>
   </action>
+  <action name="m_ActionRemoveImages">
+   <property name="text">
+    <string>Remove Images</string>
+   </property>
+  </action>
   <zorder>m_DockTimelineView</zorder>
   <zorder>m_DockHistoryView</zorder>
   <zorder>m_AnimationListDock</zorder>
@@ -778,6 +805,7 @@
    <header>UI/srsm_image_library.hpp</header>
    <slots>
     <slot>onImportImages()</slot>
+    <slot>removeSelectedItems()</slot>
    </slots>
   </customwidget>
   <customwidget>
@@ -871,6 +899,22 @@
     <hint type="destinationlabel">
      <x>-1</x>
      <y>-1</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>m_ActionRemoveImages</sender>
+   <signal>triggered()</signal>
+   <receiver>m_ImageLibrary</receiver>
+   <slot>removeSelectedItems()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>-1</x>
+     <y>-1</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>132</x>
+     <y>222</y>
     </hint>
    </hints>
   </connection>

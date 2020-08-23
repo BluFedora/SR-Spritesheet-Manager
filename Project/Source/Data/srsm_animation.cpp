@@ -29,8 +29,14 @@ Animation::Animation(Project* parent, const QString& name, int fps) :
   parent{parent},
   frames{},
   frame_rate{fps},
-  previewed_frame{0}
+  previewed_frame{0},
+  previewed_frame_time{0.0f}
 {
+}
+
+void Animation::setName(const QString& name)
+{
+  setData(name, Qt::DisplayRole);
 }
 
 void Animation::addFrame(AnimationFrameSourcePtr anim_source)
@@ -46,6 +52,11 @@ void Animation::addFrame(AnimationFrameInstance frame)
 AnimationFrameInstance* Animation::frameAt(int index)
 {
   return &frames.at(index);
+}
+
+void Animation::notifyPreviewFrameChanged()
+{
+  emit parent->signalPreviewFrameSelected(this);
 }
 
 void Animation::notifyChanged()

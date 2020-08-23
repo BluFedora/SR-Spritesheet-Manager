@@ -12,6 +12,7 @@
 
 #include <QCloseEvent>
 #include <QFileDialog>
+#include <QInputDialog>
 #include <QMessageBox>
 
 MainWindow::MainWindow(const QString& name, QWidget* parent) :
@@ -25,8 +26,8 @@ MainWindow::MainWindow(const QString& name, QWidget* parent) :
 
   setWindowModified(!m_OpenProject->hasPath());
   setTabPosition(Qt::AllDockWidgetAreas, QTabWidget::North);
-  //setCorner(Qt::BottomLeftCorner, Qt::LeftDockWidgetArea);
-  //setCorner(Qt::BottomRightCorner, Qt::RightDockWidgetArea);
+  setCorner(Qt::BottomLeftCorner, Qt::LeftDockWidgetArea);
+  setCorner(Qt::BottomRightCorner, Qt::RightDockWidgetArea);
 
   m_UndoView->setStack(&m_OpenProject->historyStack());
   m_AnimationList->setModel(&m_OpenProject->animations());
@@ -39,6 +40,7 @@ MainWindow::MainWindow(const QString& name, QWidget* parent) :
   QObject::connect(m_OpenProject.get(), &Project::animationChanged, m_TimelineFrames, &Timeline::onAnimationChanged);
   QObject::connect(m_OpenProject.get(), &Project::animationSelected, m_TimelineFrames, &Timeline::onAnimationSelected);
   QObject::connect(m_OpenProject.get(), &Project::animationSelected, m_GfxPreview, &AnimationPreview::onAnimationSelected);
+  QObject::connect(m_OpenProject.get(), &Project::signalPreviewFrameSelected, m_GfxPreview, &AnimationPreview::onFrameSelected);
   QObject::connect(m_ActionImageLibraryNewFolder, &QAction::triggered, m_OpenProject.get(), &Project::onCreateNewFolder);
   QObject::connect(m_ActionImportImages, &QAction::triggered, m_OpenProject.get(), &Project::onImportImages);
   QObject::connect(m_OpenProject.get(), &Project::renamed, this, &MainWindow::onProjectRenamed);
@@ -122,8 +124,7 @@ void MainWindow::onAnimationRightClick(const QPoint& pos)
   {
     QMenu r_click;
 
-    //auto*      rename           = r_click.addAction("Rename");
-    //auto*      change_framerate = r_click.addAction("Change Framerate");
+    auto* const rename = r_click.addAction("Rename Animation");
     auto* const remove = r_click.addAction("Remove Animation");
     const auto  result = r_click.exec(m_AnimationList->mapToGlobal(pos));
 
@@ -132,28 +133,18 @@ void MainWindow::onAnimationRightClick(const QPoint& pos)
       m_OpenProject->removeAnimation(selected_items[0]);
     }
 
-#if 0
     if (result == rename)
     {
       for (const auto& item : selected_items)
       {
-        const auto name = QInputDialog::getText(this, "Animation", "NAME: ", QLineEdit::Normal, m_Document____.m_AnimationNames.data(item).toString());
-        m_Document____.m_AnimationNames.setData(item, name);
-        m_Document____.m_AnimationData[std::size_t(item.row())]->name = name;
+        Animation* const animation = m_OpenProject->animationAt(item);
+        const auto       name      = QInputDialog::getText(this, "Animation", "NAME: ", QLineEdit::Normal, animation->name());
+
+        m_OpenProject->setAnimationName(animation, name);
+
         break;
       }
     }
-    else if (result == change_framerate)
-    {
-      for (const auto& item : selected_items)
-      {
-        auto&      anim       = m_Document____.m_AnimationData[std::size_t(item.row())];
-        const auto frame_rate = QInputDialog::getInt(this, "New Framerate", "FPS: ", (int)std::round(1.0f / anim->frame_time), 1, 60);
-        anim->frame_time      = 1.0f / frame_rate;
-        break;
-      }
-    }
-#endif
   }
 }
 
@@ -254,5 +245,15 @@ void MainWindow::on_m_ActionExportSpritesheet_triggered()
 
   if (!export_dir.isEmpty())
   {
+  }
+}
+
+void MainWindow::on_m_ActionProjectRename_triggered()
+{
+  const QString new_name = QInputDialog::getText(this, tr("Rename Project"), "New Name");
+
+  if (!new_name.isEmpty())
+  {
+    m_OpenProject->setProjectName(new_name);
   }
 }

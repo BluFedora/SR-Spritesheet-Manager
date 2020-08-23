@@ -31,6 +31,7 @@ AnimationPreview::AnimationPreview(QWidget* parent) :
   m_UpdateLoop{},
   m_Sprite{nullptr},
   m_NoSelectedAnimPixmap{":/Res/Images/Runtime/no-animation-selected.png"},
+  m_NoAnimFramesPixmap{":/Res/Images/Runtime/no-frames-in-animation.png"},
   m_CurrentAnim{nullptr},
   m_AtlasPixmap{},
   m_AnimCtx{nullptr},
@@ -219,14 +220,17 @@ void AnimationPreview::mouseMoveEvent(QMouseEvent* event)
 
 void AnimationPreview::onAnimationSelected(Animation* anim)
 {
-  m_CurrentAnim = anim;
+  m_AnimNewlySelected = m_CurrentAnim != anim;
+  m_CurrentAnim       = anim;
 
-  if (!anim)
+  if (m_CurrentAnim)
+  {
+    onFrameSelected(m_CurrentAnim);
+  }
+  else
   {
     m_Sprite->setPixmap(m_NoSelectedAnimPixmap);
   }
-
-  m_AnimNewlySelected = true;
 
   fitSpriteIntoView();
 }
@@ -236,14 +240,20 @@ void AnimationPreview::onAtlasUpdated(AtlasExport& atlas)
   m_Atlas       = &atlas;
   m_AtlasPixmap = atlas.pixmap;
 
-  onFrameSelected(m_CurrentAnim, 0);
+  if (m_CurrentAnim)
+  {
+    m_CurrentAnim->previewed_frame      = 0;
+    m_CurrentAnim->previewed_frame_time = 0.0f;
+    onFrameSelected(m_CurrentAnim);
+  }
 
   fitSpriteIntoView();
 }
 
-void AnimationPreview::onFrameSelected(Animation* anim, int index)
+void AnimationPreview::onFrameSelected(Animation* anim)
 {
   const int num_frames = m_CurrentAnim ? m_CurrentAnim->numFrames() : 0;
+  const int index      = m_CurrentAnim ? m_CurrentAnim->previewed_frame : 0;
 
   if (anim == m_CurrentAnim && index < num_frames && index >= 0)
   {
@@ -257,6 +267,10 @@ void AnimationPreview::onFrameSelected(Animation* anim, int index)
 
       m_AnimNewlySelected = false;
     }
+  }
+  else if (m_CurrentAnim)
+  {
+    m_Sprite->setPixmap(m_NoAnimFramesPixmap);
   }
 }
 
@@ -277,17 +291,19 @@ void AnimationPreview::mainUpdateLoop()
 
   if (m_IsPlayingAnimation && m_CurrentAnim && (num_frames = m_CurrentAnim->numFrames()) > 0)
   {
-    static float timer = 0.0f;
+    float& time = m_CurrentAnim->previewed_frame_time;
 
-    if (timer <= 0.0f)
+    if (time >= m_CurrentAnim->frameAt(m_CurrentAnim->previewed_frame)->frame_time)
     {
-      const int next_frame = (++m_CurrentAnim->previewed_frame) % num_frames;
+      m_CurrentAnim->previewed_frame = (m_CurrentAnim->previewed_frame + 1) % num_frames;
 
-      onFrameSelected(m_CurrentAnim, next_frame);
+      onFrameSelected(m_CurrentAnim);
 
-      timer = m_CurrentAnim->frameAt(next_frame)->frame_time;
+      time = 0.0f;
     }
-
-    timer -= 1.0f / 60.0f;
+    else
+    {
+      time += 1.0f / 60.0f;
+    }
   }
 }

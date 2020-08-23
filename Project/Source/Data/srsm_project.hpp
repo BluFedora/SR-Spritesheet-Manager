@@ -126,6 +126,7 @@ class Project final : public QObject
   void selectAnimation(int index);
   void removeAnimation(QModelIndex index);
   void importImageUrls(const QList<QUrl>& urls);
+  void setAnimationName(Animation* anim, const QString& new_name);
 
   //
 
@@ -136,6 +137,7 @@ class Project final : public QObject
   void animationSelected(Animation* anim);
   void atlasModified(AtlasExport& atlas);
   void renamed(const QString& name);
+  void signalPreviewFrameSelected(Animation* anim);
 
  public slots:
   void onTimelineFpsChange(int value);
@@ -146,12 +148,13 @@ class Project final : public QObject
   void setProjectName(const QString& value);
 
  private slots:
-  void regenExport();
-  void regenAnimationInfo();
-  void markAtlasModifed();
+  void regenerateAtlasExport();
+  void regenerateAnimationExport();
   void markAnimationsModifed();
+  void onUndoRedoIndexChanged(int idx);
 
  public:
+  void markAtlasModifed();
   void setup(ImageLibrary* img_library);
 
   bool        open(const QString& file_path);
@@ -166,7 +169,7 @@ class Project final : public QObject
  private:
   // Document Actions without the Undo stack
 
-  void newAnimationRaw(const QString& name, int frame_rate);
+  int  newAnimationRaw(const QString& name, int frame_rate);
   void setProjectNameRaw(const QString& new_name);
 
   // Helpers
@@ -192,6 +195,11 @@ void UndoAction<FRedo>::swapStates()
   auto right_before_restore = m_Project->serialize();
   m_Project->deserialize(m_SerializedState, m_Flags);
   m_SerializedState = std::move(right_before_restore);
+
+  if (m_Flags & UndoActionFlag_ModifiedAtlas)
+  {
+    m_Project->markAtlasModifed();
+  }
 }
 
 #endif  // SRSM_PROJECT_HPP

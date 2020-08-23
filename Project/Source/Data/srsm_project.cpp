@@ -44,12 +44,12 @@ void Project::newAnimation(const QString& name, int frame_rate)
   if (!hasAnimation(name))
   {
     recordAction(tr("New Animation (%1)").arg(name), UndoActionFlag_ModifiedAnimation, [this, name, frame_rate]() {
-      newAnimationRaw(name, frame_rate);
+      selectAnimation(newAnimationRaw(name, frame_rate));
     });
   }
   else
   {
-    QMessageBox::warning(&m_UI, "Warning", "You already have an animation named \'" + name + "\'");
+    QMessageBox::warning(&m_UI, "Warning", "There already exists an animation named \'" + name + "\'");
   }
 }
 
@@ -104,6 +104,25 @@ void Project::importImageUrls(const QList<QUrl>& urls)
   });
 }
 
+void Project::setAnimationName(Animation* anim, const QString& new_name)
+{
+  if (anim->name() != new_name)
+  {
+    for (int i = 0; i < numAnimations(); ++i)
+    {
+      if (animationAt(i)->name() == new_name)
+      {
+        QMessageBox::warning(&m_UI, "Warning", "There already exists an animation named \'" + new_name + "\'");
+        return;
+      }
+    }
+
+    recordAction(tr("Renamed Animation"), UndoActionFlag_ModifiedAnimation, [anim, &new_name]() {
+      anim->setName(new_name);
+    });
+  }
+}
+
 void Project::notifyAnimationChanged(Animation* animation)
 {
   emit animationChanged(animation);
@@ -118,7 +137,17 @@ void Project::markAtlasModifed()
 void Project::markAnimationsModifed()
 {
   m_UI.setWindowModified(true);
-  regenAnimationInfo();
+  regenerateAnimationExport();
+}
+
+void Project::onUndoRedoIndexChanged(int idx)
+{
+  if (idx == 0)
+  {
+    m_UI.setWindowModified(false);
+  }
+
+  regenerateAtlasExport();
 }
 
 void Project::onTimelineFpsChange(int value)
@@ -158,10 +187,12 @@ void Project::setSpritesheetImageSize(int value)
 {
   if (m_SpriteSheetImageSize != unsigned(value))
   {
-    recordAction(tr("Image Quality Set To %1 px").arg(value), UndoActionFlag_ModifiedAtlas, [this, value]() {
-      m_SpriteSheetImageSize = value;
-      markAtlasModifed();
-    });
+    recordAction(
+     tr("Image Quality Set To %1 px").arg(value),
+     UndoActionFlag_ModifiedAtlas,
+     [this, value]() {
+       m_SpriteSheetImageSize = value;
+     });
   }
 }
 
@@ -169,10 +200,12 @@ void Project::setSpritesheetFrameSize(int value)
 {
   if (m_SpriteSheetFrameSize != unsigned(value))
   {
-    recordAction(tr("Frame Quality Set To %1").arg(value), UndoActionFlag_ModifiedAtlas, [this, value]() {
-      m_SpriteSheetFrameSize = value;
-      markAtlasModifed();
-    });
+    recordAction(
+     tr("Frame Quality Set To %1").arg(value),
+     UndoActionFlag_ModifiedAtlas,
+     [this, value]() {
+       m_SpriteSheetFrameSize = value;
+     });
   }
 }
 
@@ -180,16 +213,23 @@ void Project::setProjectName(const QString& value)
 {
   if (value != m_Name)
   {
-    recordAction(tr("Renamed Project To %1").arg(value), UndoActionFlag_ModifiedSettings, [this, value]() {
-      setProjectNameRaw(value);
-    });
+    recordAction(
+     tr("Renamed Project To \"%1\"").arg(value),
+     UndoActionFlag_ModifiedSettings,
+     [this, value]() {
+       setProjectNameRaw(value);
+     });
   }
 }
 
-void Project::newAnimationRaw(const QString& name, int frame_rate)
+int Project::newAnimationRaw(const QString& name, int frame_rate)
 {
+  const int new_anim_index = m_AnimationList.rowCount();
+
   m_AnimationList.appendRow(new Animation(this, name, frame_rate));
   m_UI.setWindowModified(true);
+
+  return new_anim_index;
 }
 
 void Project::setProjectNameRaw(const QString& new_name)
@@ -209,7 +249,7 @@ void Project::setup(ImageLibrary* img_library)
 
   QObject::connect(img_library, &ImageLibrary::signalImagesAdded, this, &Project::markAtlasModifed);
   QObject::connect(img_library, &ImageLibrary::signalImagesChanged, this, &Project::markAtlasModifed);
-  QObject::connect(m_HistoryStack, &QUndoStack::indexChanged, this, &Project::regenExport);
+  QObject::connect(m_HistoryStack, &QUndoStack::indexChanged, this, &Project::onUndoRedoIndexChanged);
 }
 
 static bool loadJson(QString file_name, QJsonDocument& out)
@@ -256,7 +296,7 @@ bool Project::open(const QString& file_path)
 
         Settings::addRecentFile(name(), json_file_path);
 
-        regenExport();
+        regenerateAtlasExport();
         m_UI.setWindowModified(false);
 
         return true;
@@ -379,7 +419,7 @@ bool Project::deserialize(const QJsonObject& data, UndoActionFlags flags)
       m_SpriteSheetFrameSize = data.value("m_SpriteSheetFrameSize").toInt(m_SpriteSheetFrameSize);
 
       markAtlasModifed();
-      regenExport();
+      regenerateAtlasExport();
 
       m_UI.setWindowModified(true);
     }
@@ -392,15 +432,11 @@ bool Project::deserialize(const QJsonObject& data, UndoActionFlags flags)
 
       const QJsonObject animation_data = data["animations"].toObject();
 
-      int anim_index = 0;
       for (const auto& animation_data_key : animation_data.keys())
       {
-        const auto anim = animation_data[animation_data_key];
-
-        newAnimationRaw(animation_data_key, anim["frame_rate"].toInt());
-
-        Animation* anim_obj = (Animation*)m_AnimationList.item(anim_index, 0);
-
+        const auto anim        = animation_data[animation_data_key];
+        const int  anim_index  = newAnimationRaw(animation_data_key, anim["frame_rate"].toInt());
+        Animation* anim_obj    = (Animation*)m_AnimationList.item(anim_index, 0);
         QJsonArray frames_data = anim["frames"].toArray();
 
         for (const auto& frame : frames_data)
@@ -414,8 +450,6 @@ bool Project::deserialize(const QJsonObject& data, UndoActionFlags flags)
             frame_src,
             (float)frame_data["frame_time"].toDouble(1.0 / (double)anim_obj->frame_rate)));
         }
-
-        ++anim_index;
       }
 
       const int selected_anim = data.value("m_SelectedAnimation").toInt(-1);
@@ -440,7 +474,7 @@ int Project::numAnimations() const
 extern QRect aspectRatioDrawRegion(std::uint32_t aspect_w, std::uint32_t aspect_h, std::uint32_t window_w, std::uint32_t window_h);
 extern int   roundToUpperMultiple(int n, int grid_size);
 
-void Project::regenExport()
+void Project::regenerateAtlasExport()
 {
   static constexpr int k_FramePadding = 0;
 
@@ -462,17 +496,17 @@ void Project::regenExport()
   {
     m_IsRegeneratingAtlas = true;
 
-    const QMap<QString, QString>& loaded_images  = m_ImageLibrary->loadedImages();
-    QMap<QString, std::uint32_t>  frame_to_index = {};
-    const unsigned int            atlas_width    = roundToUpperMultiple(m_SpriteSheetImageSize, m_SpriteSheetFrameSize);  // TODO(SR): This policy is probrably stupid and makes 'm_SpriteSheetImageSize' nearly useless from the user's perspectiv.e
-    const unsigned int            num_frame_cols = atlas_width / m_SpriteSheetFrameSize;
-    const unsigned int            num_frame_rows = std::ceil(static_cast<float>(num_images) / static_cast<float>(num_frame_cols));
-    const unsigned int            atlas_height   = num_frame_rows * m_SpriteSheetFrameSize;
-    unsigned int                  current_x      = 0;
-    unsigned int                  current_y      = 0;
-    std::uint32_t                 current_frame  = 0;
-    std::vector<QRect>            frame_rects    = {};
-    auto&                         image_rects    = m_Export.image_rectangles;
+    const auto&                  loaded_images  = m_ImageLibrary->loadedImages();
+    QMap<QString, std::uint32_t> frame_to_index = {};
+    const unsigned int           atlas_width    = roundToUpperMultiple(m_SpriteSheetImageSize, m_SpriteSheetFrameSize);  // TODO(SR): This policy is probrably stupid and makes 'm_SpriteSheetImageSize' nearly useless from the user's perspectiv.e
+    const unsigned int           num_frame_cols = atlas_width / m_SpriteSheetFrameSize;
+    const unsigned int           num_frame_rows = std::ceil(static_cast<float>(num_images) / static_cast<float>(num_frame_cols));
+    const unsigned int           atlas_height   = num_frame_rows * m_SpriteSheetFrameSize;
+    unsigned int                 current_x      = 0;
+    unsigned int                 current_y      = 0;
+    std::uint32_t                current_frame  = 0;
+    std::vector<QRect>           frame_rects    = {};
+    auto&                        image_rects    = m_Export.image_rectangles;
 
     QProgressDialog progress("Generating Spritesheet", "Cancel", 0, num_images + 1, &m_UI);
     progress.setWindowModality(Qt::ApplicationModal);
@@ -558,7 +592,7 @@ void Project::regenExport()
           qDebug() << "target_rect = " << target_rect;
 #endif
 
-        frame_src->index = int(frame_rects.size());
+        frame_src->index = current_frame;
         frame_rects.emplace_back(frame_rect);
 
         current_x += m_SpriteSheetFrameSize;
@@ -590,13 +624,16 @@ void Project::regenExport()
 
     m_AtlasModified = false;
 
+    // An atlas regen implies an animation regen
+    regenerateAnimationExport();
+
     emit atlasModified(m_Export);
 
     m_IsRegeneratingAtlas = false;
   }
 }
 
-void Project::regenAnimationInfo()
+void Project::regenerateAnimationExport()
 {
   m_Export.atlas_data     = std::make_unique<QBuffer>();
   QBuffer&    byte_buffer = *m_Export.atlas_data;

@@ -34,7 +34,6 @@ class MainWindow : public QMainWindow, private Ui::MainWindow
   ProjectPtr& project() { return m_OpenProject; }
   QSpinBox&   timelineFpsSpinbox() const { return *m_TimelineFpsSpinbox; }
   QListView&  animationListView() const { return *m_AnimationList; }
-  // FrameListView& frameListView() const { return *m_FrameList; }
 
  public slots:
   void onProjectRenamed(const QString& name);
@@ -53,6 +52,7 @@ class MainWindow : public QMainWindow, private Ui::MainWindow
  private slots:
   void on_m_ActionAboutQt_triggered();
   void on_m_ActionExportSpritesheet_triggered();
+  void on_m_ActionProjectRename_triggered();
 
  private:
   void restoreWindowLayout();

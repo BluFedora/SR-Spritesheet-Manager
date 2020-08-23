@@ -34,6 +34,7 @@ class AnimationPreview : public QGraphicsView
   QTimer                m_UpdateLoop;
   AnimatedSprite*       m_Sprite;
   QPixmap               m_NoSelectedAnimPixmap;
+  QPixmap               m_NoAnimFramesPixmap;
   Animation*            m_CurrentAnim;
   QPixmap               m_AtlasPixmap;
   bfAnimation2DCtx*     m_AnimCtx;
@@ -52,7 +53,7 @@ class AnimationPreview : public QGraphicsView
  public slots:
   void onAnimationSelected(Animation* anim);
   void onAtlasUpdated(AtlasExport& atlas);
-  void onFrameSelected(Animation* anim, int index);
+  void onFrameSelected(Animation* anim);
   void onTogglePlayAnimation(void);
 
   // QWidget interface

@@ -3,14 +3,13 @@
 This program is designed to help manage making sprite sheet texture atlases with associated animations.
 
 ## Features
-- Packing multiple images into one big atlas for efficient rendering. 
+- Packing multiple images into one big atlas for efficient rendering.
 - Previewing the animations live in the tool.
 
 
 ## Usage
 
 When you first open the program you should be greeted to a Welcome screen.
-
 
 ![Screenshot of Main Window](sg_screenshot.png)
 
@@ -115,7 +114,7 @@ struct AnimationData {
 References:
   - (Designing File Formats)[https://www.fadden.com/tech/file-formats.html]
 
---- 
+---
 
 # OLD DOCS
 * This program is designed to help with the creation of spritesheets for use in the engine.
@@ -128,7 +127,7 @@ References:
   - To add images you can either:
     1) Click the "Import Images" Button
     2) Drag a folder with images to batch import.
-    3) or Drag images over the list. 
+    3) or Drag images over the list.
     - (Files are never added to the list twice so don't worry about duplicates)
   - To remove some images select them and press the delete or backspace key.
     - Some animations may become invalid if you delete images used by those animations, tbh I don't know if that would crash the Engine / Spritesheet Generator when loading the animation / spritesheet.
@@ -141,6 +140,31 @@ References:
   - Frames can be reordered by dragging and dropping.
   - To remove some frames select them and press the delete or backspace key.
 
+# TODO List
+
+## Required for Release
+
+[x] Deleting folders / images needs to recursively check children.
+[x] Deleting folders / images should be accessibvle from r-click and as a menu item (+ thus a shortcut).
+[x] Selecting an animation shoudl show a preview.
+  [x] An empty animation should show an image indicating there are no frames.
+[x] Rename Animations
+[x] Deleting of frames needs to be put in a right click menu.
+[x] Moving the timeline scrubber.
+[ ] Sending out packets lol (pretty fundamental)
+[ ] Exporting a Spritesheet
+[x] Mouse wheel to zoom
+  [ ] and scroll the Timeline View.
+[ ] Document ALL of this...
+
+## Would be nice but not important
+
+[?] Rearrange Animations around
+[?] Playback speed
+[ ] Make an anamation not loop when playing.
+[ ] Clearing the recent spritesheet list.
+[ ] Hover rect bugs, moving the mosue too fast over the tl will do weird stuff. plus it should be cleared on animation select.
+[ ] The zoom for the timeline does not correspond to mouse wheel.
 
 # Runtimes I Should Support:
 

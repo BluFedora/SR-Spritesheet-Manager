@@ -14,6 +14,8 @@
 #include "UI/srsm_image_library.hpp"
 
 #include <QDebug>
+#include <QMenu>
+#include <QMimeData>
 #include <QPainter>
 #include <QPainterPath>
 #include <QWheelEvent>
@@ -144,8 +146,6 @@ void TimelineSelection::pivotClick(int item, bool keep_old_seletion)
 
 void TimelineSelection::extendClick(int item)
 {
-  // assert(pivot_index != -1);
-
   active_selection.start_idx = std::min(pivot_index, item);
   active_selection.end_idx   = std::max(pivot_index, item);
 }
@@ -157,11 +157,6 @@ bool TimelineSelection::isSelected(int item) const
 
 void TimelineSelection::select(int item)
 {
-  if (item < 0)
-  {
-    __debugbreak();
-  }
-
   selection.insert(item);
 }
 
@@ -200,16 +195,18 @@ Timeline::Timeline(QWidget* parent) :
   m_HoveredDraggedItem{},
   m_ReorderDropLocation{},
   m_MouseDownLocation{-1, -1},
+  m_ScrubberTrackRect{0, 0, 0, 0},
+  m_IsDraggingScrubber{false},
   m_UpdateTimer{}
 {
   ui->setupUi(this);
 
-  installEventFilter(this);
-
   onFrameSizeChanged(100);
   setMouseTracking(true);
   setAcceptDrops(true);
+  setContextMenuPolicy(Qt::CustomContextMenu);
 
+  QObject::connect(this, &Timeline::customContextMenuRequested, this, &Timeline::onCustomCtxMenu);
   QObject::connect(&m_UpdateTimer, &QTimer::timeout, this, &Timeline::onTimerTick);
 
   m_UpdateTimer.start(16);
@@ -237,6 +234,7 @@ void Timeline::onAnimationChanged(Animation* anim)
 {
   if (m_CurrentAnimation == anim)
   {
+    m_Selection.clear();
     recalculateTimelineSize();
   }
 }
@@ -244,7 +242,8 @@ void Timeline::onAnimationChanged(Animation* anim)
 void Timeline::onAtlasUpdated(AtlasExport& atlas)
 {
   m_AtlasExport = &atlas;
-  update();
+  m_Selection.clear();
+  recalculateTimelineSize();
 }
 
 static int lerpInt(int lhs, float t, int rhs)
@@ -286,11 +285,86 @@ void Timeline::onTimerTick()
     src_frame.right_resize = lerpQRect(src_frame.right_resize, lerp_factor, dst_frame.right_resize);
   }
 
+  {
+    const auto local_mouse_pos = mapFromGlobal(QCursor::pos());
+
+    if (m_IsDraggingScrubber && !m_FrameInfos.empty())
+    {
+      bool found_frame = false;
+
+      for (int i = 0; i < int(m_FrameInfos.size()); ++i)
+      {
+        const auto& frame_info     = m_FrameInfos[i];
+        auto        inf_image_rect = frame_info.image;
+
+        inf_image_rect.setLeft(frame_info.left_resize.left());
+        inf_image_rect.setRight(frame_info.right_resize.right());
+        inf_image_rect.setY(-INT_MAX / 4);
+        inf_image_rect.setHeight(INT_MAX / 2);
+
+        if (inf_image_rect.contains(local_mouse_pos))
+        {
+          const float frame_width     = frame_info.image.width();
+          const float amt_across_rect = float(local_mouse_pos.x() - frame_info.image.left());
+
+          if (m_CurrentAnimation->previewed_frame != i)
+          {
+            m_CurrentAnimation->previewed_frame = i;
+
+            m_CurrentAnimation->notifyPreviewFrameChanged();
+          }
+
+          m_CurrentAnimation->previewed_frame_time = std::clamp(amt_across_rect / frame_width, 0.0f, 1.0f) * frame_info.frame_time;
+
+          found_frame = true;
+          break;
+        }
+      }
+
+      if (!found_frame)
+      {
+        const int new_frame = local_mouse_pos.x() <= k_FramePadding ? 0 : m_CurrentAnimation->numFrames() - 1;
+
+        if (m_CurrentAnimation->previewed_frame != new_frame)
+        {
+          m_CurrentAnimation->previewed_frame = new_frame;
+
+          m_CurrentAnimation->notifyPreviewFrameChanged();
+        }
+
+        if (local_mouse_pos.x() <= k_FramePadding)
+        {
+          m_CurrentAnimation->previewed_frame_time = 0.0f;
+        }
+        else
+        {
+          m_CurrentAnimation->previewed_frame_time = m_FrameInfos[new_frame].frame_time;
+        }
+      }
+    }
+  }
+
+  // This should be the only call to update in this class.
   update();
 }
 
-void Timeline::paintEvent(QPaintEvent* /*event*/)
+void Timeline::onCustomCtxMenu(const QPoint& pos)
 {
+  QMenu right_click;
+
+  auto rm_selected_frames_action = right_click.addAction(tr("Removed Selected Frames"));
+
+  rm_selected_frames_action->setEnabled(!m_Selection.isEmpty());
+
+  QObject::connect(rm_selected_frames_action, &QAction::triggered, this, &Timeline::removeSelectedFrames);
+
+  right_click.exec(mapToGlobal(pos));
+}
+
+void Timeline::paintEvent(QPaintEvent* event)
+{
+  const QPoint local_mouse_pos = mapFromGlobal(QCursor::pos());
+
   QPainter painter(this);
   painter.setRenderHint(QPainter::Antialiasing, true);
   painter.setRenderHint(QPainter::TextAntialiasing, true);
@@ -344,13 +418,28 @@ void Timeline::paintEvent(QPaintEvent* /*event*/)
   painter.fillRect(text_track_top_outline, k_FrameTrackOutline);
   painter.fillRect(text_track_bot_outline, k_FrameTrackOutline);
 
+  m_ScrubberTrackRect = text_track_top;
+
+  // Hover Fx
+  if (m_IsDraggingScrubber)
+  {
+    auto alpha_yellow = QColor(Qt::yellow);
+
+    alpha_yellow.setAlpha(64);
+
+    painter.fillRect(m_ScrubberTrackRect, alpha_yellow);
+  }
+  else if (m_ScrubberTrackRect.contains(local_mouse_pos))
+  {
+    painter.fillRect(m_ScrubberTrackRect, k_FrameInnerPaddingHightlight);
+  }
+
   // Draw Frames
 
   if (m_AtlasExport && m_CurrentAnimation)
   {
-    QPixmap&     atlas_image     = m_AtlasExport->pixmap;
-    const int    num_frames      = numFrames();
-    const QPoint local_mouse_pos = mapFromGlobal(QCursor::pos());
+    QPixmap&  atlas_image = m_AtlasExport->pixmap;
+    const int num_frames  = numFrames();
 
     for (int i = 0; i < num_frames; ++i)
     {
@@ -370,14 +459,8 @@ void Timeline::paintEvent(QPaintEvent* /*event*/)
       switch (m_DragMode)
       {
         case FrameDragMode::None:
-          break;
         case FrameDragMode::Image:
-        {
-          // painter.fillRect(m_FrameInfos[m_DraggedFrameInfo].image, Qt::lightGray);
-          break;
-        }
         case FrameDragMode::Left:
-          // painter.fillRect(m_FrameInfos[m_DraggedFrameInfo].left_resize, Qt::lightGray);
           break;
         case FrameDragMode::Right:
         {
@@ -409,23 +492,27 @@ void Timeline::paintEvent(QPaintEvent* /*event*/)
 
       if (hovered_item.drag_mode == FrameDragMode::Image)
       {
-        const auto&   frame_info = m_DesiredFrameInfos[hovered_item.frame_rect_index];
-        const QString name_str   = tr("%1").arg(frame_info.frame_src->rel_path);
+        const int     gutter        = 5;
+        const auto    viewport_rect = event->rect();
+        const auto&   frame_info    = m_DesiredFrameInfos[hovered_item.frame_rect_index];
+        const QString name_str      = tr("%1").arg(frame_info.frame_src->rel_path);
         QPainterPath  text_path;
 
-        const auto text_location = frame_info.image.bottomLeft() + QPoint(0, painter.font().pixelSize() + k_FramePadding);
+        const auto base_text_location = frame_info.image.bottomLeft() + QPoint(0, painter.font().pixelSize() + k_FramePadding);
 
-        text_path.addText(text_location, painter.font(), name_str);
+        text_path.addText(base_text_location, painter.font(), name_str);
 
-        const auto text_bounds  = text_path.boundingRect();
-        const auto amount_extra = background_rect.width() - (text_location.x() + text_bounds.width());
+        const auto text_bounds   = text_path.boundingRect();
+        auto       text_location = base_text_location - QPoint((text_bounds.width() - frame_info.image.width()) / 2, 0);
+        const auto left_bounds   = -x() + gutter;
+        const auto right_bounds  = -x() + viewport_rect.width() - gutter - int(text_bounds.width());
 
-        if (amount_extra < 0)
-        {
-          text_path.translate(amount_extra - 5, 0);
-        }
+        text_location.rx() = std::min(std::max(text_location.x(), left_bounds), right_bounds);
 
-        painter.strokePath(text_path, QPen(Qt::black, 2.0, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin));
+        const auto delta_pos = (text_location - base_text_location);
+
+        text_path.translate(delta_pos.x(), delta_pos.y());
+
         painter.fillPath(text_path, Qt::white);
       }
     }
@@ -477,29 +564,54 @@ void Timeline::paintEvent(QPaintEvent* /*event*/)
         }
       }
     }
+
+    // Draw Previewed Frame Scrubber
+
+    if (m_CurrentAnimation->numFrames())
+    {
+      const int   previewed_frame = m_CurrentAnimation->previewed_frame;
+      const auto& frame_info      = m_DesiredFrameInfos[previewed_frame];
+
+      const int    base_x                     = frame_info.image.left();
+      const float  amt_across_frame           = m_CurrentAnimation->previewed_frame_time / m_CurrentAnimation->frameAt(previewed_frame)->frame_time;
+      const int    x                          = base_x + int(amt_across_frame * frame_info.image.width());
+      const int    scrubber_grabber_size      = 10;
+      const int    scrubber_grabber_half_size = scrubber_grabber_size / 2;
+      const int    scrubber_y                 = text_track_top.top() + (text_track_top.height() - scrubber_grabber_size) / 2;
+      const QRect  scrubber_box               = QRect(x - scrubber_grabber_half_size, scrubber_y, scrubber_grabber_size, scrubber_grabber_size);
+      const QColor scrubber_color             = scrubber_box.contains(local_mouse_pos) || m_IsDraggingScrubber ? Qt::yellow : Qt::white;
+
+      painter.setPen(QPen(QBrush(scrubber_color), 2.0, Qt::SolidLine, Qt::SquareCap, Qt::BevelJoin));
+      painter.drawLine(x, 0, x, background_rect.height());
+      painter.fillRect(scrubber_box, scrubber_color);
+    }
   }
 }
 
 void Timeline::wheelEvent(QWheelEvent* event)
 {
-  event->ignore();
-}
+  const QPoint num_steps = event->angleDelta() / 15;
 
-bool Timeline::eventFilter(QObject* watched, QEvent* event)
-{
-  if (event->type() == QEvent::Wheel)
-  {
-    return false;
-  }
+  m_FrameHeight += num_steps.y();
 
-  return QWidget::eventFilter(watched, event);
+  m_FrameHeight = std::clamp(m_FrameHeight, k_DblFramePadding * 2, 400);
+
+  recalculateTimelineSize();
+
+  event->accept();
 }
 
 void Timeline::mousePressEvent(QMouseEvent* event)
 {
+  if (event->button() != Qt::LeftButton)
+  {
+    return;
+  }
+
   const QPoint local_mouse_pos = event->pos();
 
   m_ActiveDraggedItem  = infoAt(local_mouse_pos, true);
+  m_MouseDownLocation  = local_mouse_pos;
   m_HoveredDraggedItem = {};
 
   m_DraggedFrameInfo = m_ActiveDraggedItem.frame_rect_index;
@@ -511,41 +623,56 @@ void Timeline::mousePressEvent(QMouseEvent* event)
   if (m_DragMode == FrameDragMode::None)
   {
     m_Selection.clear();
-  }
-  else
-  {
-    // if (key_mods & Qt::ControlModifier)
-    // {
-    //   m_Selection.pivotClick(m_ActiveDraggedItem.frame_rect_index, true);
-    // }
-    // else if (key_mods & Qt::ShiftModifier)
-    // {
-    //   m_Selection.extendClick(m_ActiveDraggedItem.frame_rect_index);
-    // }
-    // else
-    // {
-    // m_Selection.select(m_ActiveDraggedItem.frame_rect_index);
-    // }
+
+    if ((m_IsDraggingScrubber = m_ScrubberTrackRect.contains(m_MouseDownLocation)))
+    {
+      grabMouse();
+    }
   }
 
-  m_MouseDownLocation = local_mouse_pos;
-  update();
+  event->accept();
 }
 
 void Timeline::mouseMoveEvent(QMouseEvent* event)
 {
+  if (event->buttons() != Qt::LeftButton)
+  {
+    return;
+  }
+
   const QPoint local_mouse_pos = event->pos();
   const bool   has_not_dragged = (local_mouse_pos - m_MouseDownLocation).manhattanLength() < QApplication::startDragDistance();
   QPoint       rel_pos         = local_mouse_pos + m_DraggedOffset;
 
+  // Hover Rect Calcs
+
   m_HoveredRect = QRect(0, 0, 0, 0);
 
-  if (has_not_dragged)
+  int frame_index = 0;
+  for (auto& frame : m_FrameInfos)
   {
-    return;
+    if (frame.right_resize.contains(local_mouse_pos, true))
+    {
+      m_HoveredRect = frame.right_resize;
+      break;
+    }
+
+    if (frame.image.contains(local_mouse_pos, true))
+    {
+      m_HoveredRect = frame.image;
+      break;
+    }
+
+    ++frame_index;
   }
-  else if (m_ActiveDraggedItem.drag_mode != FrameDragMode::None)
+
+  if (m_ActiveDraggedItem.drag_mode != FrameDragMode::None)
   {
+    if (has_not_dragged)
+    {
+      return;
+    }
+
     if (m_Selection.isEmpty() || !m_Selection.isSelected(m_ActiveDraggedItem.frame_rect_index))
     {
       const auto key_mods = QGuiApplication::queryKeyboardModifiers();
@@ -565,79 +692,24 @@ void Timeline::mouseMoveEvent(QMouseEvent* event)
   {
     case FrameDragMode::None:
     {
-      int frame_index = 0;
-      for (auto& frame : m_FrameInfos)
-      {
-#if 0
-        if (frame.left_resize.contains(local_mouse_pos, true))
-        {
-          m_HoveredRect = frame.left_resize;
-          break;
-        }
-#endif
-        if (frame.right_resize.contains(local_mouse_pos, true))
-        {
-          m_HoveredRect = frame.right_resize;
-          break;
-        }
-
-        if (frame.image.contains(local_mouse_pos, true))
-        {
-          m_HoveredRect = frame.image;
-          break;
-        }
-
-        ++frame_index;
-      }
-
+      break;
+    }
+    case FrameDragMode::Left:
+    {
       break;
     }
     case FrameDragMode::Image:
     {
       m_HoveredDraggedItem = dropInfoAt(local_mouse_pos);
 
-      bool needs_recalc = false;
-
-      m_Selection.forEachSelectedItem([this, &rel_pos, &local_mouse_pos, &needs_recalc](int selected_item) mutable {
+      m_Selection.forEachSelectedItem([this, &rel_pos](int selected_item) {
         m_DesiredFrameInfos[selected_item].image.moveTopLeft(rel_pos);
-
-        int frame_index = 0;
-        for (auto& frame : m_FrameInfos)
-        {
-          if (frame_index != selected_item)
-          {
-            const QRect& base_frame      = frame.image;
-            const int    half_base_width = base_frame.width() / 2;
-            const QRect& left_frame      = QRect(base_frame.left(), base_frame.top(), half_base_width, INT_MAX / 2);
-            const QRect& right_frame     = QRect(base_frame.center().x(), base_frame.top(), half_base_width, INT_MAX / 2);
-            const bool   is_to_left      = frame_index < selected_item;
-
-            // If I am to the left of a frame that is left of me (and the same for the right side).
-            if ((is_to_left && left_frame.contains(local_mouse_pos)) || (!is_to_left && right_frame.contains(local_mouse_pos)))
-            {
-              needs_recalc = true;
-              break;
-            }
-          }
-
-          ++frame_index;
-        }
-
-        rel_pos.rx() += m_DesiredFrameInfos[selected_item].image.width();
-
-        // m_DesiredFrameInfos[selected_item] = m_FrameInfos[selected_item];
+        rel_pos.rx() += m_DesiredFrameInfos[selected_item].image.width() + 2;
       });
 
       calculateDesiredLayout(m_HoveredDraggedItem.drag_mode != FrameDragMode::None);
-
-      if (needs_recalc)
-      {
-        //m_CurrentAnimation->notifyChanged();
-      }
       break;
     }
-    case FrameDragMode::Left:
-      break;
     case FrameDragMode::Right:
     {
       auto&       frame_info      = m_DesiredFrameInfos[m_ActiveDraggedItem.frame_rect_index];
@@ -673,20 +745,22 @@ void Timeline::mouseMoveEvent(QMouseEvent* event)
       const float delta_time         = (new_frame_time - frame_info.frame_time) / float(num_selected_items);
 
       m_Selection.forEachSelectedItem([this, delta_time](int selected_item) {
-        auto& frame_info = m_DesiredFrameInfos[selected_item];
-        frame_info.frame_time += delta_time;
+        m_DesiredFrameInfos[selected_item].frame_time += delta_time;
       });
 
       calculateDesiredLayout(true);
       break;
     }
   }
-
-  update();
 }
 
 void Timeline::mouseReleaseEvent(QMouseEvent* event)
 {
+  if (event->button() != Qt::LeftButton)
+  {
+    return;
+  }
+
   const auto key_mods = QGuiApplication::queryKeyboardModifiers();
 
   switch (m_DragMode)
@@ -698,24 +772,24 @@ void Timeline::mouseReleaseEvent(QMouseEvent* event)
     {
       if (m_HoveredDraggedItem.drag_mode != FrameDragMode::None)
       {
-        std::vector<AnimationFrameInstance> new_frame_data = {};
+        const int                           num_frames           = numFrames();
+        const int                           num_selected         = m_Selection.numSelected();
+        const int                           num_avaiable_slots   = num_frames - num_selected;
+        const int                           num_before_selection = std::min(m_HoveredDraggedItem.frame_rect_index, num_avaiable_slots);
+        std::set<int>                       drawn_boxes          = {};
+        int                                 count                = 0;
+        std::vector<AnimationFrameInstance> new_frames           = {};
+        std::unordered_map<int, int>        selection_remap      = {};
+        auto&                               old_frames           = m_CurrentAnimation->frames;
 
-        const int     num_frames           = numFrames();
-        const int     num_selected         = m_Selection.numSelected();
-        const int     num_avaiable_slots   = num_frames - num_selected;
-        const int     num_before_selection = std::min(m_HoveredDraggedItem.frame_rect_index, num_avaiable_slots);
-        std::set<int> drawn_boxes          = {};
-        int           count                = 0;
-
-        std::unordered_map<int, int> selection_remap = {};
+        new_frames.reserve(old_frames.size());
 
         selection_remap[-1] = -1;
 
         const auto addBox = [&](int real_index) {
-          qDebug() << new_frame_data.size() << " Set to " << m_DesiredFrameInfos[real_index].frame_src->rel_path;
-          new_frame_data.emplace_back(
-           m_DesiredFrameInfos[real_index].frame_src->shared_from_this(),
-           m_DesiredFrameInfos[real_index].frame_time);
+          const auto& frame_info = m_DesiredFrameInfos[real_index];
+
+          new_frames.emplace_back(frame_info.frame_src->shared_from_this(), frame_info.frame_time);
 
           ++count;
         };
@@ -745,58 +819,58 @@ void Timeline::mouseReleaseEvent(QMouseEvent* event)
 
         // Do a diff
 
-        for (int i = 0; i < int(new_frame_data.size()); ++i)
+        const auto first_diff = std::mismatch(new_frames.begin(), new_frames.end(), old_frames.begin());
+
+        if (first_diff.first != new_frames.end())
         {
-          if (m_CurrentAnimation->frames[i] != new_frame_data[i])
-          {
-            // Remap Selection to new indices.
+          // Remap Selection to new indices.
 
-            std::set<int> new_selection = {};
+          auto&         old_selection = m_Selection.selection;
+          std::set<int> new_selection = {};
 
-            for (int old : m_Selection.selection)
-            {
-              new_selection.insert(selection_remap[old]);
-            }
+          std::transform(
+           old_selection.begin(),
+           old_selection.end(),
+           std::inserter(new_selection, new_selection.begin()),
+           [&selection_remap](int old_item) -> int {
+             return selection_remap[old_item];
+           });
 
-            m_Selection.selection                  = std::move(new_selection);
-            m_Selection.pivot_index                = selection_remap[m_Selection.pivot_index];
-            m_Selection.active_selection.start_idx = selection_remap[m_Selection.active_selection.start_idx];
-            m_Selection.active_selection.end_idx   = selection_remap[m_Selection.active_selection.end_idx];
+          m_Selection.selection                  = std::move(new_selection);
+          m_Selection.pivot_index                = selection_remap[m_Selection.pivot_index];
+          m_Selection.active_selection.start_idx = selection_remap[m_Selection.active_selection.start_idx];
+          m_Selection.active_selection.end_idx   = selection_remap[m_Selection.active_selection.end_idx];
 
-            // Copy over new frame data
+          // Copy over new frame data
 
-            m_CurrentAnimation->parent->recordAction(
-             tr("Edit Animation '%1'").arg(m_CurrentAnimation->name()),
-             UndoActionFlag_ModifiedAnimation,
-             [this, &new_frame_data]() {
-               m_CurrentAnimation->frames = std::move(new_frame_data);
-             });
+          m_CurrentAnimation->parent->recordAction(
+           tr("Edit Frame Order '%1'").arg(m_CurrentAnimation->name()),
+           UndoActionFlag_ModifiedAnimation,
+           [&first_diff, &new_frames]() {
+             std::copy(first_diff.first, new_frames.end(), first_diff.second);
+           });
 
-            break;
-          }
+          recalculateTimelineSize();
         }
       }
 
-      recalculateTimelineSize();
       break;
     }
     case FrameDragMode::Right:
     {
-      qDebug() << "Frame Resized: " << m_ResizedFrame;
-
       if (m_ResizedFrame)
       {
-        int i = 0;
-        for (const auto& frame : m_DesiredFrameInfos)
-        {
-          m_CurrentAnimation->frameAt(i)->setFrameTime(frame.frame_time);
-          ++i;
-        }
+        m_CurrentAnimation->parent->recordAction(
+         tr("Edit Frame Time '%1'").arg(m_CurrentAnimation->name()),
+         UndoActionFlag_ModifiedAnimation,
+         [this]() {
+           m_Selection.forEachSelectedItem([this](int item) {
+             m_CurrentAnimation->frameAt(item)->setFrameTime(m_DesiredFrameInfos[item].frame_time);
+           });
+         });
       }
 
       m_ResizedFrame = false;
-
-      recalculateTimelineSize();
       break;
     }
   }
@@ -828,10 +902,12 @@ void Timeline::mouseReleaseEvent(QMouseEvent* event)
 
   // Reset State
 
+  m_IsDraggingScrubber = false;
   m_ActiveDraggedItem  = {};
   m_HoveredRect        = QRect(0, 0, 0, 0);
   m_HoveredDraggedItem = {};
   m_DragMode           = FrameDragMode::None;
+  releaseMouse();
 
   calculateDesiredLayout(true);
 }
@@ -840,28 +916,31 @@ void Timeline::resizeEvent(QResizeEvent* event)
 {
   (void)event;
 
-  // calculateDesiredLayout(true);
-  recalculateTimelineSize();
+  calculateDesiredLayout(true);
+  m_FrameInfos = m_DesiredFrameInfos;  // Instantly snapping movement is the desired behavior in the case of resizing.
 }
 
 void Timeline::dragEnterEvent(QDragEnterEvent* event)
 {
-  event->acceptProposedAction();
+  if (m_CurrentAnimation && event->mimeData()->hasFormat("application/x-qabstractitemmodeldatalist"))
+  {
+    event->acceptProposedAction();
+  }
 }
 
 void Timeline::dragMoveEvent(QDragMoveEvent* event)
 {
-  const QPoint local_mouse_pos = event->pos();
-
-  m_DroppedFrameInfo = infoAt(local_mouse_pos, false);
-
-  if (m_DroppedFrameInfo.drag_mode != FrameDragMode::None)
+  if (m_CurrentAnimation && event->mimeData()->hasFormat("application/x-qabstractitemmodeldatalist"))
   {
+    const QPoint local_mouse_pos = event->pos();
+
+    m_DroppedFrameInfo = infoAt(local_mouse_pos, false);
+
+    if (m_DroppedFrameInfo.drag_mode != FrameDragMode::None)
+    {
+      event->acceptProposedAction();
+    }
   }
-
-  event->acceptProposedAction();
-
-  update();
 }
 
 void Timeline::dragLeaveEvent(QDragLeaveEvent* event)
@@ -871,58 +950,78 @@ void Timeline::dragLeaveEvent(QDragLeaveEvent* event)
   event->accept();
 }
 
-void Timeline::dropEvent(QDropEvent* event)
+static typename std::vector<AnimationFrameInstance>::iterator iteratorFromFrameInfo(const FrameInfoAtPoint& info, std::vector<AnimationFrameInstance>& frames)
 {
-  if (m_DroppedFrameInfo.drag_mode != FrameDragMode::None)
+  switch (info.drag_mode)
   {
-#if 0
-      QByteArray  encoded = event->mimeData()->data("application/x-qabstractitemmodeldatalist");
-      QDataStream stream(&encoded, QIODevice::ReadOnly);
-
-      while (!stream.atEnd())
-      {
-          int                 row, col;
-          QMap<int, QVariant> role_data_map;
-
-          stream >> row >> col >> role_data_map;
-
-          if (role_data_map.contains(Qt::UserRole))
-          {
-              const QString rel_path = role_data_map[Qt::DisplayRole].toString();
-              const QString abs_path = role_data_map[Qt::UserRole].toString();
-
-              m_CurrentAnimation->addFrame(rel_path, abs_path);
-          }
-      }
-#endif
-
-    switch (m_DroppedFrameInfo.drag_mode)
+    case FrameDragMode::Left:
     {
-      case FrameDragMode::Left:
-      {
-        qDebug() << "Insert Frame before: " << m_DroppedFrameInfo.frame_rect_index;
-        break;
-      }
-      case FrameDragMode::Image:
-      {
-        qDebug() << "Insert Frame On Top Of: " << m_DroppedFrameInfo.frame_rect_index;
-        break;
-      }
-      case FrameDragMode::Right:
-      {
-        qDebug() << "Insert Frame After: " << m_DroppedFrameInfo.frame_rect_index;
-        break;
-      }
-      default:
-        break;
+      return frames.begin() + info.frame_rect_index;  // Insert frame before 'frame_rect_index'
+    }
+    case FrameDragMode::Image:
+    {
+      return frames.erase(frames.begin() + info.frame_rect_index);  // Insert frame on top of 'frame_rect_index'
+    }
+    case FrameDragMode::Right:
+    {
+      return frames.begin() + info.frame_rect_index + 1;  // Insert frame after 'frame_rect_index'
+    }
+    default:
+    case FrameDragMode::None:
+    {
+      return frames.begin();  // The frames are empty
     }
   }
+};
 
-  m_DroppedFrameInfo = {};
+void Timeline::dropEvent(QDropEvent* event)
+{
+  if ((m_DroppedFrameInfo.drag_mode != FrameDragMode::None || m_CurrentAnimation->frames.empty()) && event->mimeData()->hasFormat("application/x-qabstractitemmodeldatalist"))
+  {
+    QByteArray                          encoded = event->mimeData()->data("application/x-qabstractitemmodeldatalist");
+    QDataStream                         stream(&encoded, QIODevice::ReadOnly);
+    const float                         frame_time       = m_CurrentAnimation->frameTime();
+    std::vector<AnimationFrameInstance> frames_to_insert = {};
 
-  update();
+    while (!stream.atEnd())
+    {
+      int                 row, col;
+      QMap<int, QVariant> role_data_map;
 
-  event->accept();
+      stream >> row >> col >> role_data_map;
+
+      if (role_data_map.contains(ImageLibraryRole::FrameSource))
+      {
+        frames_to_insert.emplace_back(role_data_map[ImageLibraryRole::FrameSource].value<AnimationFrameSourcePtr>(), frame_time);
+      }
+    }
+
+    m_CurrentAnimation->parent->recordAction(
+     tr("Add Frames To %1").arg(m_CurrentAnimation->name()),
+     UndoActionFlag_ModifiedAnimation,
+     [this, &frames_to_insert]() {
+       std::vector<AnimationFrameInstance>& frames = m_CurrentAnimation->frames;
+       const auto                           it     = iteratorFromFrameInfo(m_DroppedFrameInfo, frames);
+
+       frames.insert(it, frames_to_insert.cbegin(), frames_to_insert.cend());
+     });
+
+    m_DroppedFrameInfo = {};
+    recalculateTimelineSize();
+
+    event->accept();
+  }
+}
+
+void Timeline::keyPressEvent(QKeyEvent* event)
+{
+  if (event->key() == Qt::Key_Delete)
+  {
+    if (removeSelectedFrames())
+    {
+      event->accept();
+    }
+  }
 }
 
 void Timeline::recalculateTimelineSize()
@@ -1049,10 +1148,6 @@ void Timeline::calculateDesiredLayout(bool use_selected_items)
   }
 }
 
-void Timeline::copyOverAnimtionData()
-{
-}
-
 int Timeline::numFrames() const
 {
   return m_CurrentAnimation ? m_CurrentAnimation->numFrames() : 0;
@@ -1103,7 +1198,6 @@ void Timeline::drawFrame(const QPixmap& atlas_image, QPainter& painter, int inde
 
   text_path.translate((frame_rect.width() - text_bounds.width()) / 2, 0);
 
-  painter.strokePath(text_path, QPen(Qt::black, 2.0, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin));
   painter.fillPath(text_path, Qt::white);
 }
 
@@ -1147,17 +1241,17 @@ FrameInfoAtPoint Timeline::infoAt(const QPoint& local_mouse_pos, bool allow_acti
   return ret;
 }
 
-FrameDropInfoAtPoint Timeline::dropInfoAt(const QPoint& local_mouse_pos)
+FrameInfoAtPoint Timeline::dropInfoAt(const QPoint& local_mouse_pos)
 {
-  const QRect          background_rect    = rect();
-  const int            frame_track_height = qMin(m_FrameHeight, background_rect.height() - k_FrameTrackPadding * 2);
-  const QRect          track_rect         = QRect(background_rect.x(), background_rect.y() + (background_rect.height() - frame_track_height) / 2, background_rect.width(), frame_track_height);
-  const int            num_frames         = numFrames();
-  const int            frame_top          = track_rect.top() + k_FramePadding;
-  const int            frame_height       = track_rect.height() - k_DblFramePadding;
-  const float          base_frame_time    = m_CurrentAnimation->frameTime();
-  int                  current_x          = 0;
-  FrameDropInfoAtPoint ret                = {};
+  const QRect      background_rect    = rect();
+  const int        frame_track_height = qMin(m_FrameHeight, background_rect.height() - k_FrameTrackPadding * 2);
+  const QRect      track_rect         = QRect(background_rect.x(), background_rect.y() + (background_rect.height() - frame_track_height) / 2, background_rect.width(), frame_track_height);
+  const int        num_frames         = numFrames();
+  const int        frame_top          = track_rect.top() + k_FramePadding;
+  const int        frame_height       = track_rect.height() - k_DblFramePadding;
+  const float      base_frame_time    = m_CurrentAnimation->frameTime();
+  int              current_x          = 0;
+  FrameInfoAtPoint ret                = {};
 
   for (int i = 0; i < num_frames; ++i)
   {
@@ -1196,4 +1290,23 @@ FrameDropInfoAtPoint Timeline::dropInfoAt(const QPoint& local_mouse_pos)
   }
 
   return ret;
+}
+
+bool Timeline::removeSelectedFrames()
+{
+  if (!m_Selection.isEmpty())
+  {
+    m_CurrentAnimation->parent->recordAction("Delete Frames", UndoActionFlag_ModifiedAnimation, [this]() {
+      m_Selection.forEachSelectedItem<true>([this](int item) {
+        m_CurrentAnimation->frames.erase(m_CurrentAnimation->frames.begin() + item);
+      });
+    });
+
+    m_Selection.clear();
+    recalculateTimelineSize();
+
+    return true;
+  }
+
+  return false;
 }
