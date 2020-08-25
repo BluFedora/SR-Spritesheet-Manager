@@ -161,9 +161,9 @@ References:
 
 [?] Rearrange Animations around
 [?] Playback speed
+[x] Hover rect bugs, moving the mouse too fast over the tl will do weird stuff. plus it should be cleared on animation select.
 [ ] Make an animation not loop when playing.
 [ ] Clearing the recent spritesheet list.
-[ ] Hover rect bugs, moving the mouse too fast over the tl will do weird stuff. plus it should be cleared on animation select.
 [ ] The zoom for the timeline does not correspond to mouse wheel.
 
 # Runtimes I Should Support:

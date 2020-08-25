@@ -198,6 +198,7 @@ Timeline::Timeline(QWidget* parent) :
   m_MouseDownLocation{-1, -1},
   m_ScrubberTrackRect{0, 0, 0, 0},
   m_IsDraggingScrubber{false},
+  m_MouseIsDown{false},
   m_UpdateTimer{}
 {
   ui->setupUi(this);
@@ -278,8 +279,9 @@ static QRect lerpQRect(const QRect& lhs, float t, const QRect& rhs)
 
 void Timeline::onTimerTick()
 {
-  const float lerp_factor = 0.55f;
-  const int   num_frames  = int(m_FrameInfos.size());
+  const float lerp_factor     = 0.55f;
+  const int   num_frames      = int(m_FrameInfos.size());
+  const auto  local_mouse_pos = mapFromGlobal(QCursor::pos());
 
   for (int i = 0; i < num_frames; ++i)
   {
@@ -292,8 +294,6 @@ void Timeline::onTimerTick()
   }
 
   {
-    const auto local_mouse_pos = mapFromGlobal(QCursor::pos());
-
     if (m_IsDraggingScrubber && !m_FrameInfos.empty())
     {
       bool found_frame = false;
@@ -347,6 +347,29 @@ void Timeline::onTimerTick()
           m_CurrentAnimation->previewed_frame_time = m_FrameInfos[new_frame].frame_time;
         }
       }
+    }
+  }
+
+  // Hover Rect Calcs
+  {
+    m_HoveredRect = QRect(0, 0, 0, 0);
+
+    int frame_index = 0;
+    for (const auto& frame : m_FrameInfos)
+    {
+      if (frame.right_resize.contains(local_mouse_pos, true))
+      {
+        m_HoveredRect = frame.right_resize;
+        break;
+      }
+
+      if (frame.image.contains(local_mouse_pos, true))
+      {
+        m_HoveredRect = frame.image;
+        break;
+      }
+
+      ++frame_index;
     }
   }
 
@@ -486,9 +509,21 @@ void Timeline::paintEvent(QPaintEvent* event)
         }
       }
     }
-    else if (!m_HoveredRect.isEmpty())
+    else
     {
-      painter.fillRect(m_HoveredRect, QColor(200, 200, 200, 80));
+      if (!m_HoveredRect.isEmpty())
+      {
+        painter.fillRect(m_HoveredRect, QColor(200, 200, 200, 80));
+      }
+
+      if (!m_IsDraggingScrubber && m_MouseIsDown)
+      {
+        const auto selection = selectionRect();
+
+        painter.fillRect(selection, QColor(255, 255, 255, 50));
+        painter.setPen(QColor(128, 128, 128, 100));
+        painter.drawRect(selection);
+      }
     }
 
     // If Not Dragging
@@ -636,7 +671,7 @@ void Timeline::mousePressEvent(QMouseEvent* event)
 
   if (m_DragMode == FrameDragMode::None)
   {
-    m_Selection.clear();
+    //m_Selection.clear();
 
     if ((m_IsDraggingScrubber = m_ScrubberTrackRect.contains(m_MouseDownLocation)))
     {
@@ -644,6 +679,7 @@ void Timeline::mousePressEvent(QMouseEvent* event)
     }
   }
 
+  m_MouseIsDown = true;
   event->accept();
 }
 
@@ -657,28 +693,6 @@ void Timeline::mouseMoveEvent(QMouseEvent* event)
   const QPoint local_mouse_pos = event->pos();
   const bool   has_not_dragged = (local_mouse_pos - m_MouseDownLocation).manhattanLength() < QApplication::startDragDistance();
   QPoint       rel_pos         = local_mouse_pos + m_DraggedOffset;
-
-  // Hover Rect Calcs
-
-  m_HoveredRect = QRect(0, 0, 0, 0);
-
-  int frame_index = 0;
-  for (auto& frame : m_FrameInfos)
-  {
-    if (frame.right_resize.contains(local_mouse_pos, true))
-    {
-      m_HoveredRect = frame.right_resize;
-      break;
-    }
-
-    if (frame.image.contains(local_mouse_pos, true))
-    {
-      m_HoveredRect = frame.image;
-      break;
-    }
-
-    ++frame_index;
-  }
 
   if (m_ActiveDraggedItem.drag_mode != FrameDragMode::None)
   {
@@ -780,6 +794,30 @@ void Timeline::mouseReleaseEvent(QMouseEvent* event)
   switch (m_DragMode)
   {
     case FrameDragMode::None:
+    {
+      if (!m_IsDraggingScrubber)
+      {
+        const auto selection = selectionRect();
+
+        if (!key_mods.testFlag(Qt::ShiftModifier))
+        {
+          m_Selection.clear();
+        }
+
+        int frame_index = 0;
+        for (const auto& frame : m_FrameInfos)
+        {
+          if (frame.left_resize.intersects(selection) || frame.right_resize.intersects(selection) || frame.image.intersects(selection))
+          {
+            m_Selection.select(frame_index);
+          }
+
+          ++frame_index;
+        }
+      }
+
+      break;
+    }
     case FrameDragMode::Left:
       break;
     case FrameDragMode::Image:
@@ -916,6 +954,7 @@ void Timeline::mouseReleaseEvent(QMouseEvent* event)
 
   // Reset State
 
+  m_MouseIsDown        = false;
   m_IsDraggingScrubber = false;
   m_ActiveDraggedItem  = {};
   m_HoveredRect        = QRect(0, 0, 0, 0);
@@ -1323,4 +1362,15 @@ bool Timeline::removeSelectedFrames()
   }
 
   return false;
+}
+
+QRect Timeline::selectionRect() const
+{
+  const QPoint local_mouse_pos = mapFromGlobal(QCursor::pos());
+
+  return QRect(
+   std::min(local_mouse_pos.x(), m_MouseDownLocation.x()),
+   std::min(local_mouse_pos.y(), m_MouseDownLocation.y()),
+   std::abs(local_mouse_pos.x() - m_MouseDownLocation.x()),
+   std::abs(local_mouse_pos.y() - m_MouseDownLocation.y()));
 }

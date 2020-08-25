@@ -174,6 +174,7 @@ class Timeline final : public QWidget
   QPoint            m_MouseDownLocation;
   QRect             m_ScrubberTrackRect;
   bool              m_IsDraggingScrubber;
+  bool              m_MouseIsDown;
   QTimer            m_UpdateTimer;
 
  public:
@@ -215,6 +216,7 @@ class Timeline final : public QWidget
   FrameInfoAtPoint infoAt(const QPoint& local_mouse_pos, bool allow_active_item) const;
   FrameInfoAtPoint dropInfoAt(const QPoint& local_mouse_pos);  // Uses 'logical' frame positioning rather than 'physical' layout
   bool             removeSelectedFrames();
+  QRect            selectionRect() const;
 };
 
 #endif  // SRSM_TIMELINE_HPP
