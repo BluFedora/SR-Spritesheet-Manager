@@ -61,21 +61,8 @@ class UndoAction final : public QUndoCommand
  public:
   UndoAction(Project* project, UndoActionFlags flags, FRedo&& do_action);
 
-  void undo() override final
-  {
-    swapStates();
-  }
-
-  void redo() override final
-  {
-    if (m_Flags.testFlag(UndoActionFlag_FirstTime))
-    {
-      m_Flags.setFlag(UndoActionFlag_FirstTime, false);
-      return;
-    }
-
-    swapStates();
-  }
+  void undo() override final { swapStates(); }
+  void redo() override final;
 
  private:
   void swapStates();
@@ -146,17 +133,19 @@ class Project final : public QObject
   void setSpritesheetImageSize(int value);
   void setSpritesheetFrameSize(int value);
   void setProjectName(const QString& value);
-
- private slots:
   void regenerateAtlasExport();
   void regenerateAnimationExport();
+
+ private slots:
   void markAnimationsModifed();
   void onUndoRedoIndexChanged(int idx);
+  void handleImageLibraryChange();
 
  public:
   void markAtlasModifed();
   void setup(ImageLibrary* img_library);
 
+  bool        exportAtlas(const QString& dir_path);
   bool        open(const QString& file_path);
   bool        save();
   QJsonObject serialize();
@@ -187,6 +176,30 @@ UndoAction<FRedo>::UndoAction(Project* project, UndoActionFlags flags, FRedo&& d
 {
   m_SerializedState = m_Project->serialize();
   do_action();
+}
+
+template<typename FRedo>
+void UndoAction<FRedo>::redo()
+{
+  if (m_Flags.testFlag(UndoActionFlag_FirstTime))
+  {
+    m_Flags.setFlag(UndoActionFlag_FirstTime, false);
+
+    if (m_Flags & UndoActionFlag_ModifiedAtlas)
+    {
+      m_Project->markAtlasModifed();
+      m_Project->regenerateAtlasExport();
+    }
+
+    if (m_Flags & UndoActionFlag_ModifiedAnimation)
+    {
+      m_Project->regenerateAnimationExport();
+    }
+
+    return;
+  }
+
+  swapStates();
 }
 
 template<typename FRedo>

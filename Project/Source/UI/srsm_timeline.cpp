@@ -18,6 +18,7 @@
 #include <QMimeData>
 #include <QPainter>
 #include <QPainterPath>
+#include <QScrollBar>
 #include <QWheelEvent>
 
 #include <cmath>  // round
@@ -210,6 +211,11 @@ Timeline::Timeline(QWidget* parent) :
   QObject::connect(&m_UpdateTimer, &QTimer::timeout, this, &Timeline::onTimerTick);
 
   m_UpdateTimer.start(16);
+}
+
+void Timeline::setup(QScrollArea* scroll_area)
+{
+  m_ParentScrollArea = scroll_area;
 }
 
 Timeline::~Timeline()
@@ -590,13 +596,21 @@ void Timeline::paintEvent(QPaintEvent* event)
 
 void Timeline::wheelEvent(QWheelEvent* event)
 {
+  const auto   key_mods  = QGuiApplication::queryKeyboardModifiers();
   const QPoint num_steps = event->angleDelta() / 15;
 
-  m_FrameHeight += num_steps.y();
+  if (key_mods & Qt::ControlModifier)
+  {
+    m_FrameHeight = std::clamp(m_FrameHeight + num_steps.y(), k_DblFramePadding * 2, 400);
 
-  m_FrameHeight = std::clamp(m_FrameHeight, k_DblFramePadding * 2, 400);
+    recalculateTimelineSize();
+  }
+  else
+  {
+    QScrollBar* const h_scroll = m_ParentScrollArea->horizontalScrollBar();
 
-  recalculateTimelineSize();
+    h_scroll->setValue(h_scroll->value() + -num_steps.y() * 2);
+  }
 
   event->accept();
 }

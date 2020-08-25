@@ -64,7 +64,7 @@ struct Header {
 
 struct Chunk {
   uint8  chunk_type[4];                 // The name of the data chunk for identifying for to read it.
-  uint32 chunk_data_length;             // The amount of data in the data field.
+  uint32 chunk_data_length;             // The amount of data in the 'chunk_data' field.
   uint8  chunk_data[chunk_data_length]; // To be interpreted based on the 'chunk_type'.
 }
 
@@ -145,41 +145,41 @@ References:
 ## Required for Release
 
 [x] Deleting folders / images needs to recursively check children.
-[x] Deleting folders / images should be accessibvle from r-click and as a menu item (+ thus a shortcut).
-[x] Selecting an animation shoudl show a preview.
+[x] Deleting folders / images should be accessible from r-click and as a menu item (+ thus a shortcut).
+[x] Selecting an animation should show a preview.
   [x] An empty animation should show an image indicating there are no frames.
 [x] Rename Animations
 [x] Deleting of frames needs to be put in a right click menu.
 [x] Moving the timeline scrubber.
-[ ] Sending out packets lol (pretty fundamental)
-[ ] Exporting a Spritesheet
 [x] Mouse wheel to zoom
-  [ ] and scroll the Timeline View.
+  [x] and scroll the Timeline View.
+[x] Exporting a Spritesheet
+[x] Sending out packets lol (pretty fundamental)
 [ ] Document ALL of this...
 
 ## Would be nice but not important
 
 [?] Rearrange Animations around
 [?] Playback speed
-[ ] Make an anamation not loop when playing.
+[ ] Make an animation not loop when playing.
 [ ] Clearing the recent spritesheet list.
-[ ] Hover rect bugs, moving the mosue too fast over the tl will do weird stuff. plus it should be cleared on animation select.
+[ ] Hover rect bugs, moving the mouse too fast over the tl will do weird stuff. plus it should be cleared on animation select.
 [ ] The zoom for the timeline does not correspond to mouse wheel.
 
 # Runtimes I Should Support:
 
-> Unity
-> Cocos2D-X
-> Cocos2D
-> SpriteKit
-> Starling
-> Sparrow
-> LibGDX
-> Moai
-> V-Play
-> Corona(TM) SDK
-> Phaser
-> MelonJS
-> Monogame
-> HTML5 / CSS sprites
-> Custom C/++
+[ ] > Unity
+[ ] > Cocos2D-X
+[ ] > Cocos2D
+[ ] > SpriteKit
+[ ] > Starling
+[ ] > Sparrow
+[ ] > LibGDX
+[ ] > Moai
+[ ] > V-Play
+[ ] > Corona(TM) SDK
+[ ] > Phaser
+[ ] > MelonJS
+[ ] > Monogame
+[ ] > HTML5 / CSS sprites
+[ ] > Custom C/++

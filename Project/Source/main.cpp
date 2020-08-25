@@ -6,19 +6,16 @@
 // Copyright (c) 2020 Shareef Abdoul-Raheem
 //
 
+#include "main.hpp"                   // g_Server
 #include "Data/srsm_settings.hpp"     // Settings
 #include "UI/sr_welcome_window.hpp"   // WelcomeWindow
 #include "UI/srsm_image_library.hpp"  // AnimationFrameSourcePtr
-
-#include "mainwindow.hpp"  // MainWindow
 
 #include <QApplication>     // QApplication
 #include <QDir>             // For MacOS
 #include <QMessageBox>      // QMessageBox
 #include <QSharedMemory  >  // QSharedMemory
 #include <QStyleFactory>    // QStyleFactory
-
-#include "main.hpp"  // g_Server
 
 /*!
  * @brief main
@@ -47,16 +44,16 @@ int main(int argc, char *argv[])
 
 #ifdef Q_OS_MACX
   QDir bin(QCoreApplication::applicationDirPath());
-  /* Set working directory */
   bin.cdUp(); /* Fix this on Mac because of the .app folder, */
   bin.cdUp(); /* which means that the actual executable is   */
-  bin.cdUp(); /* three levels deep. Grrr.                    */
+  bin.cdUp(); /* three levels deep. ;(                       */
   QDir::setCurrent(bin.absolutePath());
 #endif
 
   QApplication::setStyle(QStyleFactory::create("Fusion"));
 
   QPalette palette;
+
   palette.setColor(QPalette::Window, QColor(53, 53, 53));
   palette.setColor(QPalette::WindowText, Qt::white);
   palette.setColor(QPalette::Base, QColor(15, 15, 15));
@@ -75,7 +72,6 @@ int main(int argc, char *argv[])
   app.setPalette(palette);
 
   QSharedMemory shared_mem{"SRSM.AppCount", nullptr};
-  g_Server = nullptr;
 
   if (!shared_mem.attach(QSharedMemory::ReadWrite))
   {
@@ -86,11 +82,10 @@ int main(int argc, char *argv[])
   else
   {
     QMessageBox::warning(nullptr, "Error", "Only one instance of this program can be opened at one.", QMessageBox::Ok, QMessageBox::Ok);
-    // app.exit(0);
     return 0;
   }
 
-  if (!g_Server || !g_Server->startServer())
+  if (!g_Server->startServer())
   {
     g_Server = nullptr;
     QMessageBox::warning(nullptr, "Error", "Failed to create a local sevrer. Connect to engine functionality will be disabled.", QMessageBox::Ok, QMessageBox::Ok);
@@ -115,4 +110,4 @@ int main(int argc, char *argv[])
   return app_result;
 }
 
-std::unique_ptr<LiveReloadServer> g_Server;
+std::unique_ptr<LiveReloadServer> g_Server = nullptr;

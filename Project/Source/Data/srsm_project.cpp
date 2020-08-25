@@ -71,6 +71,8 @@ void Project::selectAnimation(int index)
     if (animation)
     {
       m_UI.timelineFpsSpinbox().setValue(animation->frame_rate);
+
+      m_UI.animationListView().setCurrentIndex(m_AnimationList.index(m_SelectedAnimation, 0, QModelIndex()));
     }
 
     m_UI.timelineFpsSpinbox().setEnabled(animation);
@@ -147,6 +149,12 @@ void Project::onUndoRedoIndexChanged(int idx)
     m_UI.setWindowModified(false);
   }
 
+  regenerateAtlasExport();
+}
+
+void Project::handleImageLibraryChange()
+{
+  markAtlasModifed();
   regenerateAtlasExport();
 }
 
@@ -247,9 +255,31 @@ void Project::setup(ImageLibrary* img_library)
   m_ImageLibrary            = img_library;
   m_ImageLibrary->m_Project = this;
 
-  QObject::connect(img_library, &ImageLibrary::signalImagesAdded, this, &Project::markAtlasModifed);
-  QObject::connect(img_library, &ImageLibrary::signalImagesChanged, this, &Project::markAtlasModifed);
+  QObject::connect(img_library, &ImageLibrary::signalImagesAdded, this, &Project::handleImageLibraryChange);
+  QObject::connect(img_library, &ImageLibrary::signalImagesChanged, this, &Project::handleImageLibraryChange);
   QObject::connect(m_HistoryStack, &QUndoStack::indexChanged, this, &Project::onUndoRedoIndexChanged);
+}
+
+bool Project::exportAtlas(const QString& dir_path)
+{
+  QDir    root_dir      = dir_path;
+  QString image_path    = root_dir.filePath(m_Name + ".png");
+  QString bytes_path    = root_dir.filePath(m_Name + ".srsm.bytes");
+  QFile   bytes_file    = bytes_path;
+  bool    is_successful = m_Export.image.save(image_path, "PNG", -1);
+
+  // Only write out bytes if we were able to save the png.
+  is_successful = is_successful && bytes_file.open(QFile::WriteOnly);
+
+  if (is_successful)
+  {
+    QBuffer& buffer = *m_Export.atlas_data;
+
+    bytes_file.write(buffer.buffer());
+    bytes_file.close();
+  }
+
+  return is_successful;
 }
 
 static bool loadJson(QString file_name, QJsonDocument& out)
@@ -280,18 +310,19 @@ bool Project::open(const QString& file_path)
 
       const QJsonObject json_obj = json_doc.object();
 
+      // Must be loaded before deserialize.
+      if (json_obj.contains("m_EditUUID"))
+      {
+        m_EditUUID = QUuid(json_obj.value("m_EditUUID").toString("00000000-0000-0000-0000-000000000000"));
+      }
+
+      if (m_EditUUID.isNull())
+      {
+        m_EditUUID = QUuid::createUuid();
+      }
+
       if (deserialize(json_obj))
       {
-        if (json_obj.contains("m_EditUUID"))
-        {
-          m_EditUUID = QUuid(json_obj.value("m_EditUUID").toString("00000000-0000-0000-0000-000000000000"));
-        }
-
-        if (m_EditUUID.isNull())
-        {
-          m_EditUUID = QUuid::createUuid();
-        }
-
         const QString& json_file_path = m_ProjectFile->absoluteFilePath(m_Name + ".srsmproj.json");
 
         Settings::addRecentFile(name(), json_file_path);
@@ -456,6 +487,8 @@ bool Project::deserialize(const QJsonObject& data, UndoActionFlags flags)
 
       selectAnimation(selected_anim);
       m_UI.animationListView().setCurrentIndex(m_AnimationList.index(selected_anim, 0, QModelIndex()));
+
+      regenerateAnimationExport();
 
       m_UI.setWindowModified(true);
     }
@@ -624,6 +657,19 @@ void Project::regenerateAtlasExport()
 
     m_AtlasModified = false;
 
+    if (g_Server)
+    {
+      if (m_EditUUID.isNull())
+      {
+        m_EditUUID = QUuid::createUuid();
+      }
+
+      const QString    guid_str  = m_EditUUID.toString(QUuid::WithoutBraces);
+      const QByteArray guid_cstr = guid_str.toLocal8Bit();
+
+      g_Server->sendTextureChangedPacket(guid_cstr.data(), m_Export.image);
+    }
+
     // An atlas regen implies an animation regen
     regenerateAnimationExport();
 
@@ -644,13 +690,19 @@ void Project::regenerateAnimationExport()
 
   // Write "SRSM" Header Chunk
   {
-    const std::uint16_t data_offset         = 7;
+    const char          header_magic[4]     = {'S', 'R', 'S', 'M'};
     const std::uint8_t  header_version      = 0;
     const std::uint8_t  header_num_chunks   = 3;
     const std::uint16_t header_atlas_width  = m_Export.image.width();
     const std::uint16_t header_atlas_height = m_Export.image.height();
+    const std::uint16_t data_offset         = sizeof(header_magic) +
+                                      sizeof(data_offset) +
+                                      sizeof(header_version) +
+                                      sizeof(header_num_chunks) +
+                                      sizeof(header_atlas_width) +
+                                      sizeof(header_atlas_height);
 
-    byte_buffer.write("SRSM");
+    byte_buffer.write((const char*)header_magic, sizeof(header_magic));
     byte_buffer.write((const char*)&data_offset, sizeof(data_offset));
     byte_buffer.write((const char*)&header_version, sizeof(header_version));
     byte_buffer.write((const char*)&header_num_chunks, sizeof(header_num_chunks));
@@ -661,9 +713,9 @@ void Project::regenerateAnimationExport()
   // Write "FRME" Chunk
   {
     const std::uint32_t frme_chunk_num_frames = std::uint32_t(num_images);
-    const std::uint32_t frme_chunk_size       = sizeof(std::uint32_t) + frme_chunk_num_frames * (sizeof(std::uint32_t) * 4);
+    const std::uint32_t frme_chunk_size       = sizeof(frme_chunk_num_frames) + frme_chunk_num_frames * (sizeof(std::uint32_t) * 4);
 
-    byte_buffer.write("FRFM");
+    byte_buffer.write("FRME", 4);
     byte_buffer.write((const char*)&frme_chunk_size, sizeof(frme_chunk_size));
     byte_buffer.write((const char*)&frme_chunk_num_frames, sizeof(frme_chunk_num_frames));
 
@@ -686,9 +738,21 @@ void Project::regenerateAnimationExport()
   // Write "ANIM" Chunk
   {
     const std::uint32_t num_animations  = std::uint32_t(m_AnimationList.rowCount());
-    const std::uint32_t anim_chunk_size = sizeof(std::uint32_t) + num_animations * (sizeof(std::uint32_t) + sizeof(float));
+    std::uint32_t       anim_chunk_size = sizeof(num_animations);
 
-    byte_buffer.write("ANIM");
+    for (std::uint32_t i = 0; i < num_animations; ++i)
+    {
+      Animation* const    animation      = animationAt(i);
+      const QString       animation_name = animation->name();
+      const auto          anim_name_8bit = animation_name.toLocal8Bit();
+      const std::uint32_t name_length    = std::uint32_t(animation_name.length());
+      const std::uint32_t num_frames     = animation->numFrames();
+
+      anim_chunk_size += sizeof(name_length) + name_length + 1;  // +1 for Nul terminator.
+      anim_chunk_size += sizeof(num_frames) + num_frames * (sizeof(std::uint32_t) + sizeof(float));
+    }
+
+    byte_buffer.write("ANIM", 4);
     byte_buffer.write((const char*)&anim_chunk_size, sizeof(anim_chunk_size));
     byte_buffer.write((const char*)&num_animations, sizeof(num_animations));
 
@@ -721,25 +785,36 @@ void Project::regenerateAnimationExport()
     }
   }
 
-  // Write "FOOT" chunk
+  if (m_EditUUID.isNull())
+  {
+    m_EditUUID = QUuid::createUuid();
+  }
+
+  const QString    guid_str  = m_EditUUID.toString(QUuid::WithoutBraces);
+  const QByteArray guid_cstr = guid_str.toLocal8Bit();
+
+  // Write "EDIT" Chunk
+  {
+    const std::uint32_t edit_chunk_size = guid_cstr.length() + 1;
+
+    byte_buffer.write("EDIT", 4);
+    byte_buffer.write((const char*)&edit_chunk_size, sizeof(edit_chunk_size));
+    byte_buffer.write(guid_cstr, edit_chunk_size);
+  }
+
+  // Write "FOOT" Chunk
   {
     const std::uint32_t foot_chunk_size = 0;
 
-    byte_buffer.write("FOOT");
+    byte_buffer.write("FOOT", 4);
     byte_buffer.write((const char*)&foot_chunk_size, sizeof(foot_chunk_size));
   }
 
+  byte_buffer.close();
+
   if (g_Server)
   {
-    if (m_EditUUID.isNull())
-    {
-      m_EditUUID = QUuid::createUuid();
-    }
-
-    const QString    guid_str  = m_EditUUID.toString(QUuid::WithoutBraces);
-    const QByteArray guid_cstr = guid_str.toLocal8Bit();
-
-    g_Server->sendAnimChangedPacket(guid_cstr.data());
+    g_Server->sendAnimChangedPacket(guid_cstr.data(), byte_buffer);
   }
 }
 

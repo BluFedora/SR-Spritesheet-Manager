@@ -32,6 +32,7 @@ MainWindow::MainWindow(const QString& name, QWidget* parent) :
   m_UndoView->setStack(&m_OpenProject->historyStack());
   m_AnimationList->setModel(&m_OpenProject->animations());
   m_OpenProject->setup(m_ImageLibrary);
+  m_TimelineFrames->setup(m_Timeline);
 
   QObject::connect(m_TimelineFrameSizeSlider, &QSlider::valueChanged, m_TimelineFrames, &Timeline::onFrameSizeChanged);
   QObject::connect(m_TimelineFpsSpinbox, &QSpinBox::valueChanged, m_OpenProject.get(), &Project::onTimelineFpsChange);
@@ -44,7 +45,6 @@ MainWindow::MainWindow(const QString& name, QWidget* parent) :
   QObject::connect(m_ActionImageLibraryNewFolder, &QAction::triggered, m_OpenProject.get(), &Project::onCreateNewFolder);
   QObject::connect(m_ActionImportImages, &QAction::triggered, m_OpenProject.get(), &Project::onImportImages);
   QObject::connect(m_OpenProject.get(), &Project::renamed, this, &MainWindow::onProjectRenamed);
-
   QObject::connect(m_AnimationList, &QListView::customContextMenuRequested, this, &MainWindow::onAnimationRightClick);
   QObject::connect(m_AnimationList->selectionModel(), &QItemSelectionModel::currentRowChanged, this, &MainWindow::onAnimationSelectionChanged);
 
@@ -91,10 +91,6 @@ void MainWindow::postLoadInit()
   QObject::connect(m_QualitySpritesheetSize, &QSpinBox::editingFinished, this, &MainWindow::onSpritesheetQualitySettingChanged);
   QObject::connect(m_QualityFrameSize, &QSpinBox::editingFinished, this, &MainWindow::onSpritesheetQualitySettingChanged);
 }
-
-/*
-  new_image.save(imagePath, "PNG");
-*/
 
 void MainWindow::onProjectRenamed(const QString& name)
 {
@@ -245,6 +241,10 @@ void MainWindow::on_m_ActionExportSpritesheet_triggered()
 
   if (!export_dir.isEmpty())
   {
+    if (!m_OpenProject->exportAtlas(export_dir))
+    {
+      QMessageBox::warning(this, "Warning", "Failed to export spritesheet.", QMessageBox::Ok, QMessageBox::Ok);
+    }
   }
 }
 

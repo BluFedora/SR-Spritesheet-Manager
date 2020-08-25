@@ -46,7 +46,7 @@ AnimationPreview::AnimationPreview(QWidget* parent) :
 
   // Setup The Animation Context
 
-  const bfAnimation2DCreateParams create_anim_ctx = {nullptr, nullptr, nullptr};
+  const bfAnim2DCreateParams create_anim_ctx = {nullptr, nullptr, nullptr};
 
   m_AnimCtx = bfAnimation2D_new(&create_anim_ctx);
 

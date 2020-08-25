@@ -9,6 +9,7 @@
 #ifndef SRSM_TIMELINE_HPP
 #define SRSM_TIMELINE_HPP
 
+#include <QScrollArea>
 #include <QTimer>
 #include <QWidget>
 
@@ -142,24 +143,29 @@ class Timeline final : public QWidget
   Q_OBJECT
 
  private:
-  Ui::Timeline*              ui;
-  int                        m_FrameHeight;
+  // UI
+
+  Ui::Timeline* ui;
+  QScrollArea*  m_ParentScrollArea;
+  int           m_FrameHeight;
+
+  // Frame Drawing
+
   Animation*                 m_CurrentAnimation;
   AtlasExport*               m_AtlasExport;
   std::vector<FrameRectInfo> m_FrameInfos;
   std::vector<FrameRectInfo> m_DesiredFrameInfos;
-  int                        m_DraggedFrameInfo;
-  QPoint                     m_DraggedOffset;
-  FrameDragMode              m_DragMode;
-  FrameInfoAtPoint           m_DroppedFrameInfo;
-  QRect                      m_HoveredRect;
 
-  union
-  {
-    bool m_ResizedFrame;
-  };
+  // Old Mouse Interaction
 
-  // Mouse Interaction Code
+  int              m_DraggedFrameInfo;
+  QPoint           m_DraggedOffset;
+  FrameDragMode    m_DragMode;
+  FrameInfoAtPoint m_DroppedFrameInfo;
+  QRect            m_HoveredRect;
+  bool             m_ResizedFrame;
+
+  // Mouse Interaction
 
   TimelineSelection m_Selection;
   FrameInfoAtPoint  m_ActiveDraggedItem;
@@ -172,6 +178,9 @@ class Timeline final : public QWidget
 
  public:
   explicit Timeline(QWidget* parent = nullptr);
+
+  void setup(QScrollArea* scroll_area);
+
   ~Timeline();
 
  public slots:
