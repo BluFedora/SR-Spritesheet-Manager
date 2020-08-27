@@ -8,12 +8,12 @@
 
 #include "UI/sr_welcome_window.hpp"
 
-#include "ui_sr_welcome_window.h"
-
 #include "Data/srsm_project.hpp"
 #include "Data/srsm_settings.hpp"
 
 #include "mainwindow.hpp"
+
+#include "ui_sr_welcome_window.h"
 
 #include <QFileDialog>
 #include <QInputDialog>

@@ -70,7 +70,7 @@ struct Chunk {
 
 // Chunk Types
 
-struct ChunkFrames /* chunk_type = "FRME" */ {
+struct ChunkFramesData /* chunk_type = "FRME" */ {
   uint32    num_frames;
   FrameData frames[num_frames];
 }
@@ -81,7 +81,7 @@ struct ChuckAnimData /* chunk_type = "ANIM" */ {
 }
 
 struct ChunkLiveEditData /* chunk_type = "EDIT" */ {
-  uint8 uuid[37]; /*!< Nul terminated string. 'xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx\0' */
+  uint8 uuid[37]; /*!< Nul terminated uuid string. 'xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx\0' */
 }
 
 // Optional Chunk used to indicate the end of the file.

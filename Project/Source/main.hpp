@@ -1,11 +1,11 @@
 #ifndef MAIN_HPP
 #define MAIN_HPP
 
-#include "bf/Animation2D.h"  // k_bfSRSMServerPort
-#include "bf/anim2D/bf_anim2D_network.h"
+#include "bf/Animation2D.h"               // k_bfSRSMServerPort
+#include "bf/anim2D/bf_anim2D_network.h"  // bfAnim2DPacketHeader
 
-#include <QBuffer>
-#include <QImage>
+#include <QBuffer>     // QBuffer
+#include <QImage>      // QImage
 #include <QObject>     // QObject
 #include <QTcpServer>  // QTcpServer
 #include <QTcpSocket>  // QTcpSocket
@@ -17,14 +17,21 @@ class LiveReloadServer final : public QObject
  private:
   QTcpServer            m_Server;
   QVector<QTcpSocket *> m_Clients;
+  qint64                m_NumBytesNeedSend;
+  qint64                m_NumBytesSent;
 
  public:
   LiveReloadServer() :
     QObject(nullptr),
     m_Server{nullptr},
-    m_Clients{}
+    m_Clients{},
+    m_NumBytesNeedSend{0},
+    m_NumBytesSent{0}
   {
   }
+
+  qint64 numBytesNeedSend() const { return m_NumBytesNeedSend; }
+  qint64 numBytesSent() const { return m_NumBytesSent; }
 
   bool startServer()
   {
@@ -36,64 +43,63 @@ class LiveReloadServer final : public QObject
     QObject::connect(&m_Server, &QTcpServer::newConnection, [this]() {
       QTcpSocket *const client_socket = m_Server.nextPendingConnection();
 
-      qDebug() << "onClientConnect";
-
       //client_socket->waitForBytesWritten(-1);
 
       QObject::connect(client_socket, &QTcpSocket::disconnected, this, &LiveReloadServer::onClientDisconnect);
+      QObject::connect(client_socket, &QTcpSocket::bytesWritten, this, &LiveReloadServer::onClientBytesSent);
 
       m_Clients.push_back(client_socket);
+      qDebug() << "onClientConnect";
     });
   }
 
   void sendTextureChangedPacket(const char *guid, const QImage &atlas_image)
   {
-    if (m_Clients.isEmpty())
+    if (!m_Clients.isEmpty())
     {
-      return;
-    }
+      QByteArray image_bytes;
+      QBuffer    buffer(&image_bytes);
+      buffer.open(QIODevice::WriteOnly);
+      atlas_image.save(&buffer, "png");
+      buffer.close();
 
-    bfAnim2DPacketHeader header;
+      bfAnim2DPacketHeader header;
+      const uint32_t       image_bytes_size = image_bytes.size();
 
-    QByteArray image_bytes;
-    QBuffer    buffer(&image_bytes);
-    buffer.open(QIODevice::WriteOnly);
-    atlas_image.save(&buffer, "png");
+      header.packet_size = uint32_t(k_bfAnim2DTotalHeaderSize + sizeof(image_bytes_size) + image_bytes_size);
+      header.packet_type = bfAnim2DPacketType_TextureChanged;
 
-    const uint32_t image_bytes_size = image_bytes.size();
+      m_NumBytesNeedSend += header.packet_size * m_Clients.size();
 
-    header.packet_size = uint32_t(k_bfAnim2DHeaderSize + k_bfAnim2DGUIDSize + sizeof(image_bytes_size) + image_bytes_size);
-    header.packet_type = bfAnim2DPacketType_TextureChanged;
-
-    for (QTcpSocket *client : m_Clients)
-    {
-      client->write((const char *)&header, k_bfAnim2DHeaderSize);
-      client->write((const char *)guid, k_bfAnim2DGUIDSize);
-      client->write((const char *)&image_bytes_size, sizeof(image_bytes_size));
-      client->write(image_bytes.data(), image_bytes_size);
+      for (QTcpSocket *client : m_Clients)
+      {
+        client->write((const char *)&header, k_bfAnim2DHeaderSize);
+        client->write((const char *)guid, k_bfAnim2DGUIDSize);
+        client->write((const char *)&image_bytes_size, sizeof(image_bytes_size));
+        client->write(image_bytes.data(), image_bytes_size);
+      }
     }
   }
 
   void sendAnimChangedPacket(const char *guid, const QBuffer &srsm_byte_buffer)
   {
-    if (m_Clients.isEmpty())
+    if (!m_Clients.isEmpty())
     {
-      return;
-    }
+      bfAnim2DPacketHeader header;
+      const uint32_t       srsm_byte_buffer_size = srsm_byte_buffer.size();
 
-    const uint32_t srsm_byte_buffer_size = srsm_byte_buffer.size();
+      header.packet_size = uint32_t(k_bfAnim2DTotalHeaderSize + sizeof(srsm_byte_buffer_size) + srsm_byte_buffer_size);
+      header.packet_type = bfAnim2DPacketType_SpritesheetChanged;
 
-    bfAnim2DPacketHeader header;
+      m_NumBytesNeedSend += header.packet_size * m_Clients.size();
 
-    header.packet_size = uint32_t(k_bfAnim2DHeaderSize + k_bfAnim2DGUIDSize + sizeof(srsm_byte_buffer_size) + srsm_byte_buffer_size);
-    header.packet_type = bfAnim2DPacketType_SpritesheetChanged;
-
-    for (QTcpSocket *client : m_Clients)
-    {
-      client->write((const char *)&header, k_bfAnim2DHeaderSize);
-      client->write((const char *)guid, k_bfAnim2DGUIDSize);
-      client->write((const char *)&srsm_byte_buffer_size, sizeof(srsm_byte_buffer_size));
-      client->write(srsm_byte_buffer.data(), srsm_byte_buffer_size);
+      for (QTcpSocket *client : m_Clients)
+      {
+        client->write((const char *)&header, k_bfAnim2DHeaderSize);
+        client->write((const char *)guid, k_bfAnim2DGUIDSize);
+        client->write((const char *)&srsm_byte_buffer_size, sizeof(srsm_byte_buffer_size));
+        client->write(srsm_byte_buffer.data(), srsm_byte_buffer_size);
+      }
     }
   }
 
@@ -106,7 +112,23 @@ class LiveReloadServer final : public QObject
     }
   }
 
+ signals:
+  void bytesSent();
+
  private slots:
+  void onClientBytesSent(qint64 num_bytes)
+  {
+    m_NumBytesSent += num_bytes;
+
+    emit bytesSent();
+
+    // if (m_NumBytesSent == m_NumBytesNeedSend)
+    // {
+    //   m_NumBytesSent     = 0;
+    //   m_NumBytesNeedSend = 0;
+    // }
+  }
+
   void onClientDisconnect()
   {
     qDebug() << "onClientDisconnect";

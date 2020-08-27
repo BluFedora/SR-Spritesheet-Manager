@@ -10,6 +10,7 @@
 
 #include "Data/srsm_settings.hpp"     // Settings
 #include "UI/srsm_image_library.hpp"  // ImageLibrary
+#include "main.hpp"                   // g_Server
 #include "mainwindow.hpp"
 
 #include <QDebug>
@@ -37,6 +38,7 @@ Project::Project(MainWindow* main_window, const QString& name) :
   m_AtlasModified{false},
   m_IsRegeneratingAtlas{false}
 {
+  m_Export.atlas_data = std::make_unique<QBuffer>();
 }
 
 void Project::newAnimation(const QString& name, int frame_rate)
@@ -450,7 +452,6 @@ bool Project::deserialize(const QJsonObject& data, UndoActionFlags flags)
       m_SpriteSheetFrameSize = data.value("m_SpriteSheetFrameSize").toInt(m_SpriteSheetFrameSize);
 
       markAtlasModifed();
-      regenerateAtlasExport();
 
       m_UI.setWindowModified(true);
     }
@@ -487,8 +488,6 @@ bool Project::deserialize(const QJsonObject& data, UndoActionFlags flags)
 
       selectAnimation(selected_anim);
       m_UI.animationListView().setCurrentIndex(m_AnimationList.index(selected_anim, 0, QModelIndex()));
-
-      regenerateAnimationExport();
 
       m_UI.setWindowModified(true);
     }
@@ -529,17 +528,17 @@ void Project::regenerateAtlasExport()
   {
     m_IsRegeneratingAtlas = true;
 
-    const auto&                  loaded_images  = m_ImageLibrary->loadedImages();
-    QMap<QString, std::uint32_t> frame_to_index = {};
-    const unsigned int           atlas_width    = roundToUpperMultiple(m_SpriteSheetImageSize, m_SpriteSheetFrameSize);  // TODO(SR): This policy is probrably stupid and makes 'm_SpriteSheetImageSize' nearly useless from the user's perspectiv.e
-    const unsigned int           num_frame_cols = atlas_width / m_SpriteSheetFrameSize;
-    const unsigned int           num_frame_rows = std::ceil(static_cast<float>(num_images) / static_cast<float>(num_frame_cols));
-    const unsigned int           atlas_height   = num_frame_rows * m_SpriteSheetFrameSize;
-    unsigned int                 current_x      = 0;
-    unsigned int                 current_y      = 0;
-    std::uint32_t                current_frame  = 0;
-    std::vector<QRect>           frame_rects    = {};
-    auto&                        image_rects    = m_Export.image_rectangles;
+    const auto&                  loaded_images_keys = m_ImageLibrary->loadedImageList();
+    QMap<QString, std::uint32_t> frame_to_index     = {};
+    const unsigned int           atlas_width        = roundToUpperMultiple(m_SpriteSheetImageSize, m_SpriteSheetFrameSize);  // TODO(SR): This policy is probrably stupid and makes 'm_SpriteSheetImageSize' nearly useless from the user's perspectiv.e
+    const unsigned int           num_frame_cols     = atlas_width / m_SpriteSheetFrameSize;
+    const unsigned int           num_frame_rows     = std::ceil(static_cast<float>(num_images) / static_cast<float>(num_frame_cols));
+    const unsigned int           atlas_height       = num_frame_rows * m_SpriteSheetFrameSize;
+    unsigned int                 current_x          = 0;
+    unsigned int                 current_y          = 0;
+    std::uint32_t                current_frame      = 0;
+    std::vector<QRect>           frame_rects        = {};
+    auto&                        image_rects        = m_Export.image_rectangles;
 
     QProgressDialog progress("Generating Spritesheet", "Cancel", 0, num_images + 1, &m_UI);
     progress.setWindowModality(Qt::ApplicationModal);
@@ -558,9 +557,6 @@ void Project::regenerateAtlasExport()
     m_Export.atlas_data = std::make_unique<QBuffer>();
 
     image_rects.clear();
-
-    const auto loaded_images_keys = loaded_images.keys();
-
     frame_rects.reserve(loaded_images_keys.size());
 
     for (const QString& abs_image_path : loaded_images_keys)
@@ -625,7 +621,6 @@ void Project::regenerateAtlasExport()
           qDebug() << "target_rect = " << target_rect;
 #endif
 
-        frame_src->index = current_frame;
         frame_rects.emplace_back(frame_rect);
 
         current_x += m_SpriteSheetFrameSize;
@@ -681,11 +676,11 @@ void Project::regenerateAtlasExport()
 
 void Project::regenerateAnimationExport()
 {
-  m_Export.atlas_data     = std::make_unique<QBuffer>();
   QBuffer&    byte_buffer = *m_Export.atlas_data;
   const auto& image_rects = m_Export.image_rectangles;
   const int   num_images  = int(image_rects.size());
 
+  byte_buffer.buffer().clear();
   byte_buffer.open(QIODevice::WriteOnly);
 
   // Write "SRSM" Header Chunk

@@ -1049,6 +1049,11 @@ void Timeline::dropEvent(QDropEvent* event)
       }
     }
 
+    if (frames_to_insert.empty())
+    {
+      return;
+    }
+
     m_CurrentAnimation->parent->recordAction(
      tr("Add Frames To %1").arg(m_CurrentAnimation->name()),
      UndoActionFlag_ModifiedAnimation,
@@ -1099,8 +1104,7 @@ void Timeline::recalculateTimelineSize()
 
       assert(frame);
       assert(frame->source);
-      assert(frame->source->index < int(m_AtlasExport->image_rectangles.size()));
-      assert(frame->source->index >= 0);
+      assert(frame->source->index >= 0 && frame->source->index < m_AtlasExport->image_rectangles.size());
 
       const float  frame_time        = frame->frame_time;
       const QRect& frame_uv_rect     = m_AtlasExport->image_rectangles[frame->source->index];

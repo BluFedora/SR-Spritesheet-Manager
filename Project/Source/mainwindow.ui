@@ -704,6 +704,13 @@
    <addaction name="m_ActionImportImages"/>
    <addaction name="m_ActionExportSpritesheet"/>
   </widget>
+  <widget class="QStatusBar" name="m_StatusBar">
+   <property name="font">
+    <font>
+     <pointsize>8</pointsize>
+    </font>
+   </property>
+  </widget>
   <action name="m_ActionProjectSave">
    <property name="icon">
     <iconset resource="../Resources/ResourceFile.qrc">

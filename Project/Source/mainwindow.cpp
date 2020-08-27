@@ -8,6 +8,8 @@
 #include "Data/srsm_settings.hpp"
 #include "UI/sr_welcome_window.hpp"
 #include "UI/srsm_timeline.hpp"
+
+#include "main.hpp"
 #include "newanimation.hpp"
 
 #include <QCloseEvent>
@@ -18,7 +20,8 @@
 MainWindow::MainWindow(const QString& name, QWidget* parent) :
   QMainWindow(parent),
   m_BaseTitle{},
-  m_OpenProject{std::make_unique<Project>(this, name)}
+  m_OpenProject{std::make_unique<Project>(this, name)},
+  m_PacketSendingProgress{this}
 {
   setupUi(this);
 
@@ -78,6 +81,17 @@ MainWindow::MainWindow(const QString& name, QWidget* parent) :
     m_GfxPreview->onTogglePlayAnimation();
     m_TimelinePlayButton->setIcon(m_GfxPreview->isPlayingAnimation() ? style()->standardIcon(QStyle::SP_MediaPause) : style()->standardIcon(QStyle::SP_MediaPlay));
   });
+
+  if (g_Server)
+  {
+    m_StatusBar->showMessage("Data => Engine");
+    m_StatusBar->addPermanentWidget(&m_PacketSendingProgress);
+
+    QObject::connect(g_Server.get(), &LiveReloadServer::bytesSent, [this]() {
+      m_PacketSendingProgress.setRange(0, g_Server->numBytesNeedSend());
+      m_PacketSendingProgress.setValue(g_Server->numBytesSent());
+    });
+  }
 
   restoreWindowLayout();
 }

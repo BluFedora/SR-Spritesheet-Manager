@@ -69,7 +69,6 @@ struct Animation final : public QStandardItem
   AnimationFrameInstance* frameAt(int index);
 
   void notifyPreviewFrameChanged();
-
   void notifyChanged();
 };
 

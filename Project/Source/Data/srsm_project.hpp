@@ -9,9 +9,7 @@
 #ifndef SRSM_PROJECT_HPP
 #define SRSM_PROJECT_HPP
 
-#include "srsm_animation.hpp"
-
-#include "main.hpp"  // g_Server
+#include "srsm_animation.hpp"  // Animation
 
 #include <QBuffer>      // QBuffer
 #include <QDir>         // QDir

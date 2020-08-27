@@ -37,7 +37,8 @@ QDataStream& operator>>(QDataStream& stream, AnimationFrameSourcePtr& data)
 ImageLibrary::ImageLibrary(QWidget* parent) :
   QTreeWidget(parent),
   m_FileWatcher{},
-  m_AbsToFrameSrc{}
+  m_AbsToFrameSrc{},
+  m_LoadedImagesIndices{}
 {
   setAcceptDrops(true);
 
@@ -53,6 +54,7 @@ QJsonObject ImageLibrary::serialize(Project& project)
 
 void ImageLibrary::deserialize(Project& project, const QJsonObject& data)
 {
+  m_LoadedImagesIndices.clear();
   m_AbsToFrameSrc.clear();
   clear();
 
@@ -375,6 +377,8 @@ void ImageLibrary::addImage(QTreeWidgetItem* parent, const QString& img_path, bo
       const QString          tooltip        = QString("<img src=\"%1\" width=256 height=256> <p style=\"text-aling:center\">%2</p>").arg(img_path).arg(img_path);
       QTreeWidgetItem* const image_item     = new QTreeWidgetItem(parent, QStringList{frame_name});
 
+      frame_src_data->index = m_LoadedImagesIndices.size();
+
       image_item->setFlags(image_item->flags() & ~Qt::ItemIsDropEnabled);
       image_item->setData(0, ImageLibraryRole::AbsolutePath, img_path);
       image_item->setData(0, ImageLibraryRole::FrameSource, QVariant::fromValue(frame_src_data));
@@ -382,6 +386,7 @@ void ImageLibrary::addImage(QTreeWidgetItem* parent, const QString& img_path, bo
 
       m_AbsToFrameSrc.insert(img_path, frame_src_data);
       m_FileWatcher.addPath(img_path);
+      m_LoadedImagesIndices.push_back(img_path);
 
       if (emit_signal)
       {

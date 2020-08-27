@@ -3,18 +3,14 @@
 // Copyright (c) 2020 Shareef Aboudl-Raheem
 //
 
-#ifndef MAINWINDOW_H
-#define MAINWINDOW_H
-
-#include "ui_mainwindow.h"
+#ifndef SRSM_MAINWINDOW_H
+#define SRSM_MAINWINDOW_H
 
 #include "Data/srsm_project.hpp"  // ProjectPtr
 
-#include <QJsonObject>
-#include <QStringListModel>
+#include "ui_mainwindow.h"
 
-#include <memory>
-#include <vector>
+#include <QProgressBar>
 
 // clang-format off
 class MainWindow : public QMainWindow, private Ui::MainWindow
@@ -23,8 +19,9 @@ class MainWindow : public QMainWindow, private Ui::MainWindow
   Q_OBJECT
 
  private:
-  QString    m_BaseTitle;
-  ProjectPtr m_OpenProject;
+  QString      m_BaseTitle;
+  ProjectPtr   m_OpenProject;
+  QProgressBar m_PacketSendingProgress;
 
  public:
   explicit MainWindow(const QString& name, QWidget* parent = 0);
@@ -58,4 +55,4 @@ class MainWindow : public QMainWindow, private Ui::MainWindow
   void restoreWindowLayout();
 };
 
-#endif  // MAINWINDOW_H
+#endif  // SRSM_MAINWINDOW_H

@@ -53,12 +53,13 @@ class ImageLibrary : public QTreeWidget
   Project*                               m_Project;
   QFileSystemWatcher                     m_FileWatcher;
   QMap<QString, AnimationFrameSourcePtr> m_AbsToFrameSrc;
+  QVector<QString>                       m_LoadedImagesIndices;
 
  public:
   ImageLibrary(QWidget* parent);
 
-  int                                           numImages() const { return m_AbsToFrameSrc.uniqueKeys().size(); }
-  const QMap<QString, AnimationFrameSourcePtr>& loadedImages() const { return m_AbsToFrameSrc; }
+  int                     numImages() const { return m_AbsToFrameSrc.uniqueKeys().size(); }
+  const QVector<QString>& loadedImageList() const { return m_LoadedImagesIndices; }
 
   QJsonObject             serialize(Project& project);
   void                    deserialize(Project& project, const QJsonObject& data);
