@@ -230,6 +230,7 @@ void AnimationPreview::onAnimationSelected(Animation* anim)
   else
   {
     m_Sprite->setPixmap(m_NoSelectedAnimPixmap);
+    m_Sprite->setUVRect(QRectF(0.0f, 0.0f, 1.0f, 1.0f));
   }
 
   fitSpriteIntoView();
@@ -259,7 +260,14 @@ void AnimationPreview::onFrameSelected(Animation* anim)
   {
     const QRect& frame_rect = m_Atlas->image_rectangles[m_CurrentAnim->frameAt(index)->source->index];
 
-    m_Sprite->setPixmap(m_AtlasPixmap.copy(frame_rect));
+    m_Sprite->setPixmap(m_AtlasPixmap /*.copy(frame_rect)*/);
+
+    m_Sprite->setUVRect(
+     QRectF(
+      qreal(frame_rect.x()) / qreal(m_AtlasPixmap.width()),
+      qreal(frame_rect.y()) / qreal(m_AtlasPixmap.height()),
+      qreal(frame_rect.width()) / qreal(m_AtlasPixmap.width()),
+      qreal(frame_rect.height()) / qreal(m_AtlasPixmap.height())));
 
     if (m_AnimNewlySelected)
     {
@@ -271,6 +279,7 @@ void AnimationPreview::onFrameSelected(Animation* anim)
   else if (m_CurrentAnim)
   {
     m_Sprite->setPixmap(m_NoAnimFramesPixmap);
+    m_Sprite->setUVRect(QRectF(0.0f, 0.0f, 1.0f, 1.0f));
   }
 }
 

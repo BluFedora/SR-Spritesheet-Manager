@@ -66,7 +66,7 @@ int main(int argc, char *argv[])
   palette.setColor(QPalette::BrightText, Qt::red);
   palette.setColor(QPalette::Disabled, QPalette::Text, Qt::darkGray);
   palette.setColor(QPalette::Disabled, QPalette::ButtonText, Qt::darkGray);
-  palette.setColor(QPalette::Highlight, QColor(142, 45, 197).lighter());
+  palette.setColor(QPalette::Highlight, QColor(142, 45, 197, 150).lighter());
   palette.setColor(QPalette::HighlightedText, Qt::black);
 
   app.setPalette(palette);

@@ -65,15 +65,6 @@ struct FrameInfoAtPoint
   FrameDragMode drag_mode        = FrameDragMode::None;
 };
 
-//
-// Timeline Operations
-// - Resize Frame timing
-// - Drop frames onto timeline
-// - Select Frames
-// - Delete Frames
-// - Reorder Frames
-//
-
 // Inclusive Range [start_idx, end_idx]
 struct TimelineSelectionItem final
 {
@@ -209,7 +200,7 @@ class Timeline final : public QWidget
   void keyPressEvent(QKeyEvent* event) override;
 
  private:
-  void             recalculateTimelineSize();
+  void             recalculateTimelineSize(bool new_anim = false);
   void             calculateDesiredLayout(bool use_selected_items);
   int              numFrames() const;
   void             drawFrame(const QPixmap& atlas_image, QPainter& painter, int index);

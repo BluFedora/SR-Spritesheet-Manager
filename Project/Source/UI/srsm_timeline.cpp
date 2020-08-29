@@ -32,7 +32,7 @@ static const QBrush k_FrameTrackBrush             = QBrush(QColor(0x2B, 0x2B, 0x
 static const int    k_FontHeight                  = 16;
 static const QBrush k_TextTrackBrush              = QBrush(QColor(20, 20, 20, 255));
 static const int    k_FrameTrackPadding           = 2 + k_FontHeight;
-static const int    k_FramePadding                = 5;
+static const int    k_FramePadding                = 6;
 static const int    k_DblFramePadding             = k_FramePadding * 2;
 static const float  k_MinFrameTime                = 1.0f / 60.0f;
 static const int    k_FrameInnerPadding           = 2;
@@ -44,15 +44,8 @@ static const QColor k_TickMarkColor               = QColor(20, 20, 20, 200);
 //   Functions because QRect is stupid...
 //   Just read the docs for QRect::right and QRect::bottom :(
 
-static int trueRight(const QRect& r)
-{
-  return r.x() + r.width();
-}
-
-static int trueBottom(const QRect& r)
-{
-  return r.y() + r.height();
-}
+static int trueRight(const QRect& r) { return r.x() + r.width(); }
+static int trueBottom(const QRect& r) { return r.y() + r.height(); }
 
 // Math Helpers
 
@@ -211,7 +204,7 @@ Timeline::Timeline(QWidget* parent) :
   QObject::connect(this, &Timeline::customContextMenuRequested, this, &Timeline::onCustomCtxMenu);
   QObject::connect(&m_UpdateTimer, &QTimer::timeout, this, &Timeline::onTimerTick);
 
-  m_UpdateTimer.start(16);
+  m_UpdateTimer.start(28);  // ~35.7fps Good power consumption to animated smoothness balance
 }
 
 void Timeline::setup(QScrollArea* scroll_area)
@@ -234,7 +227,7 @@ void Timeline::onAnimationSelected(Animation* anim)
 {
   m_Selection.clear();
   m_CurrentAnimation = anim;
-  recalculateTimelineSize();
+  recalculateTimelineSize(true);
 }
 
 void Timeline::onAnimationChanged(Animation* anim)
@@ -260,7 +253,7 @@ static int lerpInt(int lhs, float t, int rhs)
 
 static QRect lerpQRect(const QRect& lhs, float t, const QRect& rhs)
 {
-  static const int k_CloseEnoughToRhs = 1;
+  // static const int k_CloseEnoughToRhs = 1;
 
   QRect result;
 
@@ -269,17 +262,17 @@ static QRect lerpQRect(const QRect& lhs, float t, const QRect& rhs)
   result.setWidth(lerpInt(lhs.width(), t, rhs.width()));
   result.setHeight(lerpInt(lhs.height(), t, rhs.height()));
 
-  if (std::abs(result.x() - rhs.x()) <= k_CloseEnoughToRhs) { result.setX(rhs.x()); }
-  if (std::abs(result.y() - rhs.y()) <= k_CloseEnoughToRhs) { result.setY(rhs.y()); }
-  if (std::abs(result.width() - rhs.width()) <= k_CloseEnoughToRhs) { result.setWidth(rhs.width()); }
-  if (std::abs(result.height() - rhs.height()) <= k_CloseEnoughToRhs) { result.setHeight(rhs.height()); }
+  //if (std::abs(result.x() - rhs.x()) <= k_CloseEnoughToRhs) { result.setX(rhs.x()); }
+  //if (std::abs(result.y() - rhs.y()) <= k_CloseEnoughToRhs) { result.setY(rhs.y()); }
+  //if (std::abs(result.width() - rhs.width()) <= k_CloseEnoughToRhs) { result.setWidth(rhs.width()); }
+  //if (std::abs(result.height() - rhs.height()) <= k_CloseEnoughToRhs) { result.setHeight(rhs.height()); }
 
   return result;
 }
 
 void Timeline::onTimerTick()
 {
-  const float lerp_factor     = 0.55f;
+  const float lerp_factor     = 0.58f;
   const int   num_frames      = int(m_FrameInfos.size());
   const auto  local_mouse_pos = mapFromGlobal(QCursor::pos());
 
@@ -355,21 +348,30 @@ void Timeline::onTimerTick()
     m_HoveredRect = QRect(0, 0, 0, 0);
 
     int frame_index = 0;
+
     for (const auto& frame : m_FrameInfos)
     {
       if (frame.right_resize.contains(local_mouse_pos, true))
       {
         m_HoveredRect = frame.right_resize;
+        setCursor(Qt::SplitHCursor);
         break;
       }
 
       if (frame.image.contains(local_mouse_pos, true))
       {
         m_HoveredRect = frame.image;
+
+        setCursor(m_MouseIsDown ? Qt::ClosedHandCursor : Qt::OpenHandCursor);
         break;
       }
 
       ++frame_index;
+    }
+
+    if (m_HoveredRect.isEmpty())
+    {
+      setCursor(Qt::ArrowCursor);
     }
   }
 
@@ -967,10 +969,12 @@ void Timeline::mouseReleaseEvent(QMouseEvent* event)
 
 void Timeline::resizeEvent(QResizeEvent* event)
 {
-  (void)event;
-
   calculateDesiredLayout(true);
-  m_FrameInfos = m_DesiredFrameInfos;  // Instantly snapping movement is the desired behavior in the case of resizing.
+
+  if (event->oldSize().height() != event->size().height())
+  {
+    m_FrameInfos = m_DesiredFrameInfos;  // Instantly snapping movement is the desired behavior in the case of resizing.
+  }
 }
 
 void Timeline::dragEnterEvent(QDragEnterEvent* event)
@@ -1082,7 +1086,7 @@ void Timeline::keyPressEvent(QKeyEvent* event)
   }
 }
 
-void Timeline::recalculateTimelineSize()
+void Timeline::recalculateTimelineSize(bool new_anim)
 {
   m_FrameInfos.clear();
   m_DesiredFrameInfos.clear();
@@ -1100,21 +1104,16 @@ void Timeline::recalculateTimelineSize()
 
     for (int i = 0; i < num_frames; ++i)
     {
-      AnimationFrameInstance* const frame = m_CurrentAnimation->frameAt(i);
+      AnimationFrameInstance* const frame             = m_CurrentAnimation->frameAt(i);
+      const float                   frame_time        = frame->frame_time;
+      const QRect&                  frame_uv_rect     = m_AtlasExport->image_rectangles[frame->source->index];
+      const float                   frame_width_scale = frame_time / base_frame_time;
+      const int                     frame_width       = int(m_FrameHeight * frame_width_scale);
+      const QRect                   resize_left       = QRect(current_x, frame_top, k_FramePadding, frame_height);
+      const QRect                   frame_rect        = QRect(current_x + k_FramePadding, frame_top, frame_width - k_DblFramePadding, frame_height);
+      const QRect                   resize_right      = QRect(trueRight(frame_rect), frame_top, k_FramePadding, frame_height);
 
-      assert(frame);
-      assert(frame->source);
-      assert(frame->source->index >= 0 && frame->source->index < m_AtlasExport->image_rectangles.size());
-
-      const float  frame_time        = frame->frame_time;
-      const QRect& frame_uv_rect     = m_AtlasExport->image_rectangles[frame->source->index];
-      const float  frame_width_scale = frame_time / base_frame_time;
-      const int    frame_width       = int(m_FrameHeight * frame_width_scale);
-      const QRect  resize_left       = QRect(current_x, frame_top, k_FramePadding, frame_height);
-      const QRect  frame_rect        = QRect(current_x + k_FramePadding, frame_top, frame_width - k_DblFramePadding, frame_height);
-      const QRect  resize_right      = QRect(trueRight(frame_rect), frame_top, k_FramePadding, frame_height);
-
-      m_FrameInfos.emplace_back(
+      m_DesiredFrameInfos.emplace_back(
        frame_rect,
        resize_left,
        resize_right,
@@ -1125,7 +1124,31 @@ void Timeline::recalculateTimelineSize()
       current_x = trueRight(resize_right);
     }
 
-    m_DesiredFrameInfos = m_FrameInfos;
+    if (new_anim)
+    {
+      // The animation is pretty bad so disabled for now.
+#if 0
+      m_FrameInfos.reserve(m_DesiredFrameInfos.size());
+
+      std::transform(m_DesiredFrameInfos.cbegin(), m_DesiredFrameInfos.cend(), std::back_inserter(m_FrameInfos), [](const FrameRectInfo& frame_info) {
+        return FrameRectInfo{
+         QRect(frame_info.image.x(), frame_info.image.y() - 100, frame_info.image.width(), frame_info.image.height()),
+         QRect(frame_info.left_resize.x(), frame_info.left_resize.y() - 100, frame_info.left_resize.width(), frame_info.left_resize.height()),
+         QRect(frame_info.right_resize.x(), frame_info.right_resize.y() - 100, frame_info.right_resize.width(), frame_info.right_resize.height()),
+         frame_info.frame_time,
+         frame_info.frame_uv_rect,
+         frame_info.frame_src};
+      });
+#else
+      m_FrameInfos = m_DesiredFrameInfos;
+#endif
+    }
+    else
+    {
+      m_FrameInfos = m_DesiredFrameInfos;
+    }
+
+    m_CurrentAnimation->notifyPreviewFrameChanged();
 
     setMinimumSize(current_x, 0);
   }
