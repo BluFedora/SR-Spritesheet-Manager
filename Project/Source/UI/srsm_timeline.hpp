@@ -94,15 +94,7 @@ struct TimelineSelection final
   template<bool reversed_iteration = false, typename F>
   void forEachSelectedItem(F&& f) const
   {
-    fully_ordered_indices = selection;
-
-    if (active_selection.isValid())
-    {
-      for (int item = active_selection.start_idx; item <= active_selection.end_idx; ++item)
-      {
-        fully_ordered_indices.insert(item);
-      }
-    }
+    updateFullyOrderedIndices();
 
     if constexpr (reversed_iteration)
     {
@@ -116,17 +108,15 @@ struct TimelineSelection final
 
   int numSelected() const
   {
-    int count = 0;
-
-    forEachSelectedItem([&count](int) { ++count; });
-
-    return count;
+    updateFullyOrderedIndices();
+    return int(fully_ordered_indices.size());
   }
 
   void select(int item);
 
  private:
   void toggle(int item);
+  void updateFullyOrderedIndices() const;
 };
 
 class Timeline final : public QWidget
@@ -204,7 +194,7 @@ class Timeline final : public QWidget
   void             calculateDesiredLayout(bool use_selected_items);
   int              numFrames() const;
   void             drawFrame(const QPixmap& atlas_image, QPainter& painter, int index);
-  FrameInfoAtPoint infoAt(const QPoint& local_mouse_pos, bool allow_active_item) const;
+  FrameInfoAtPoint infoAt(const QPoint& local_mouse_pos, bool allow_active_item, bool allow_last_frame_right_ext = false) const;
   FrameInfoAtPoint dropInfoAt(const QPoint& local_mouse_pos);  // Uses 'logical' frame positioning rather than 'physical' layout
   bool             removeSelectedFrames();
   QRect            selectionRect() const;

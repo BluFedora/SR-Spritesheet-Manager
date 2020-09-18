@@ -36,7 +36,6 @@ class AnimationPreview : public QGraphicsView
   QPixmap               m_NoSelectedAnimPixmap;
   QPixmap               m_NoAnimFramesPixmap;
   Animation*            m_CurrentAnim;
-  QPixmap               m_AtlasPixmap;
   bfAnimation2DCtx*     m_AnimCtx;
   bfAnim2DScene*        m_Anim2DScene;
   bool                  m_AnimNewlySelected;
@@ -69,6 +68,7 @@ class AnimationPreview : public QGraphicsView
 
  private:
   void fitSpriteIntoView();
+  void fitSpriteOneToOne();
   void mainUpdateLoop();
 };
 

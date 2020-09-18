@@ -24,7 +24,7 @@
 const QString k_XButtonStyles = R"(
 QPushButton {
   background-color: #313131;
-  border:           3px solid #404040;
+  border:           /*3px solid #404040*/2px solid #404040;
 }
 
 QPushButton:hover:!pressed {
@@ -57,7 +57,11 @@ WelcomeWindow::WelcomeWindow(QWidget* parent) :
   x_btn->setStyleSheet(k_XButtonStyles);
   x_btn->setContentsMargins(1, 2, 3, 4);
 
-  ui->gridLayout->addWidget(x_btn, 0, 0, Qt::AlignRight | Qt::AlignTop);
+  ui->m_TitleBar->layout()->addWidget(x_btn);
+
+  ui->m_TitleBar->layout()->setAlignment(ui->m_TitleText, Qt::AlignHCenter);
+
+  // ui->gridLayout->addWidget(x_btn, 0, 0, Qt::AlignRight | Qt::AlignTop);
 
   QObject::connect(x_btn, &QPushButton::clicked, this, &WelcomeWindow::onCloseRequested);
 
@@ -88,8 +92,11 @@ WelcomeWindow::WelcomeWindow(QWidget* parent) :
     QString recent_file_name = settings.value("name").toString();
     QString recent_file_path = settings.value("path").toString();
 
-    ui->m_RecentFiles->addItem(recent_file_name);
-    m_RecentFilePaths.push_back(recent_file_path);
+    if (QFileInfo::exists(recent_file_path))
+    {
+      ui->m_RecentFiles->addItem(recent_file_name);
+      m_RecentFilePaths.push_back(recent_file_path);
+    }
   }
 
   settings.endArray();
@@ -104,8 +111,8 @@ WelcomeWindow::~WelcomeWindow()
 
 void WelcomeWindow::on_m_NewProjectBtn_clicked()
 {
-  bool    ok;
-  QString text = QInputDialog::getText(this, "New Project", "Project Name", QLineEdit::Normal, "New Spritesheet", &ok, Qt::Dialog, Qt::ImhNone);
+  bool          ok;
+  const QString text = QInputDialog::getText(this, "New Project", "Project Name", QLineEdit::Normal, "New Spritesheet", &ok, Qt::Dialog, Qt::ImhNone);
 
   if (ok)
   {

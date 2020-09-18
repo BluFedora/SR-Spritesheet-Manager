@@ -19,6 +19,7 @@
 #include <QListView>
 #include <QMimeData>
 #include <QOpenGLWidget>
+#include <QPainter>
 
 static constexpr qreal k_ScaleFactor     = 1.1;
 static constexpr qreal k_InvScaleFactor  = 1.0 / k_ScaleFactor;
@@ -33,7 +34,6 @@ AnimationPreview::AnimationPreview(QWidget* parent) :
   m_NoSelectedAnimPixmap{":/Res/Images/Runtime/no-animation-selected.png"},
   m_NoAnimFramesPixmap{":/Res/Images/Runtime/no-frames-in-animation.png"},
   m_CurrentAnim{nullptr},
-  m_AtlasPixmap{},
   m_AnimCtx{nullptr},
   m_Anim2DScene{nullptr},
   m_AnimNewlySelected{false},
@@ -185,8 +185,7 @@ void AnimationPreview::keyPressEvent(QKeyEvent* event)
   }
   else if (event->key() == Qt::Key_0)
   {
-    resetTransform();
-    centerOn(m_Sprite);
+    fitSpriteOneToOne();
   }
   else if (event->key() == Qt::Key_1)
   {
@@ -225,26 +224,27 @@ void AnimationPreview::onAnimationSelected(Animation* anim)
 
   if (m_CurrentAnim)
   {
+    m_Sprite->setPixmap(m_Atlas->pixmap);
     onFrameSelected(m_CurrentAnim);
   }
   else
   {
     m_Sprite->setPixmap(m_NoSelectedAnimPixmap);
     m_Sprite->setUVRect(QRectF(0.0f, 0.0f, 1.0f, 1.0f));
+    fitSpriteIntoView();
   }
-
-  fitSpriteIntoView();
 }
 
 void AnimationPreview::onAtlasUpdated(AtlasExport& atlas)
 {
-  m_Atlas       = &atlas;
-  m_AtlasPixmap = atlas.pixmap;
+  m_Atlas = &atlas;
 
   if (m_CurrentAnim)
   {
     m_CurrentAnim->previewed_frame      = 0;
     m_CurrentAnim->previewed_frame_time = 0.0f;
+
+    m_Sprite->setPixmap(m_Atlas->pixmap);
     onFrameSelected(m_CurrentAnim);
   }
 
@@ -260,19 +260,18 @@ void AnimationPreview::onFrameSelected(Animation* anim)
   {
     const QRect& frame_rect = m_Atlas->image_rectangles[m_CurrentAnim->frameAt(index)->source->index];
 
-    m_Sprite->setPixmap(m_AtlasPixmap /*.copy(frame_rect)*/);
-
+    m_Sprite->setPixmap(m_Atlas->pixmap);
     m_Sprite->setUVRect(
      QRectF(
-      qreal(frame_rect.x()) / qreal(m_AtlasPixmap.width()),
-      qreal(frame_rect.y()) / qreal(m_AtlasPixmap.height()),
-      qreal(frame_rect.width()) / qreal(m_AtlasPixmap.width()),
-      qreal(frame_rect.height()) / qreal(m_AtlasPixmap.height())));
+      qreal(frame_rect.x()) / qreal(m_Atlas->pixmap.width()),
+      qreal(frame_rect.y()) / qreal(m_Atlas->pixmap.height()),
+      qreal(frame_rect.width()) / qreal(m_Atlas->pixmap.width()),
+      qreal(frame_rect.height()) / qreal(m_Atlas->pixmap.height())));
 
     if (m_AnimNewlySelected)
     {
-      fitSpriteIntoView();
-
+      // fitSpriteIntoView();
+      fitSpriteOneToOne();
       m_AnimNewlySelected = false;
     }
   }
@@ -281,6 +280,8 @@ void AnimationPreview::onFrameSelected(Animation* anim)
     m_Sprite->setPixmap(m_NoAnimFramesPixmap);
     m_Sprite->setUVRect(QRectF(0.0f, 0.0f, 1.0f, 1.0f));
   }
+
+  m_Sprite->update();
 }
 
 void AnimationPreview::onTogglePlayAnimation()
@@ -292,6 +293,12 @@ void AnimationPreview::fitSpriteIntoView()
 {
   resetTransform();
   fitInView(m_Sprite->boundingRect().adjusted(-k_FitInViewGutter, -k_FitInViewGutter, k_FitInViewGutter, k_FitInViewGutter), Qt::KeepAspectRatio);
+}
+
+void AnimationPreview::fitSpriteOneToOne()
+{
+  resetTransform();
+  centerOn(m_Sprite);
 }
 
 void AnimationPreview::mainUpdateLoop()

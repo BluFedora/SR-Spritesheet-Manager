@@ -26,7 +26,13 @@
    <iconset resource="../Resources/ResourceFile.qrc">
     <normaloff>:/Res/Images/icon.png</normaloff>:/Res/Images/icon.png</iconset>
   </property>
-  <layout class="QGridLayout" name="gridLayout">
+  <layout class="QFormLayout" name="formLayout">
+   <property name="horizontalSpacing">
+    <number>5</number>
+   </property>
+   <property name="verticalSpacing">
+    <number>5</number>
+   </property>
    <property name="leftMargin">
     <number>5</number>
    </property>
@@ -39,9 +45,36 @@
    <property name="bottomMargin">
     <number>5</number>
    </property>
-   <property name="spacing">
-    <number>5</number>
-   </property>
+   <item row="0" column="0">
+    <widget class="QLabel" name="m_NameLabel">
+     <property name="text">
+      <string>Name:</string>
+     </property>
+    </widget>
+   </item>
+   <item row="0" column="1">
+    <widget class="QLineEdit" name="m_AnimName">
+     <property name="inputMask">
+      <string/>
+     </property>
+     <property name="maxLength">
+      <number>512</number>
+     </property>
+     <property name="dragEnabled">
+      <bool>true</bool>
+     </property>
+     <property name="clearButtonEnabled">
+      <bool>true</bool>
+     </property>
+    </widget>
+   </item>
+   <item row="1" column="0">
+    <widget class="QLabel" name="m_FrameRateLabel">
+     <property name="text">
+      <string>Frame Rate:</string>
+     </property>
+    </widget>
+   </item>
    <item row="1" column="1">
     <widget class="QSpinBox" name="m_Framerate">
      <property name="focusPolicy">
@@ -67,36 +100,6 @@
      </property>
      <property name="value">
       <number>10</number>
-     </property>
-    </widget>
-   </item>
-   <item row="1" column="0">
-    <widget class="QLabel" name="m_FrameRateLabel">
-     <property name="text">
-      <string>Frame Rate:</string>
-     </property>
-    </widget>
-   </item>
-   <item row="0" column="1">
-    <widget class="QLineEdit" name="m_AnimName">
-     <property name="inputMask">
-      <string/>
-     </property>
-     <property name="maxLength">
-      <number>512</number>
-     </property>
-     <property name="dragEnabled">
-      <bool>true</bool>
-     </property>
-     <property name="clearButtonEnabled">
-      <bool>true</bool>
-     </property>
-    </widget>
-   </item>
-   <item row="0" column="0">
-    <widget class="QLabel" name="m_NameLabel">
-     <property name="text">
-      <string>Name:</string>
      </property>
     </widget>
    </item>

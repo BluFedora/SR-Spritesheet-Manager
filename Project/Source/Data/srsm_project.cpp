@@ -411,7 +411,7 @@ QJsonObject Project::serialize()
       AnimationFrameInstance* anim_frame = anim->frameAt(j);
 
       frames_data.push_back(QJsonObject{
-       {"full_path", anim_frame->full_path()},
+       {"rel_path", m_ProjectFile->relativeFilePath(anim_frame->full_path())},
        {"frame_time", anim_frame->frame_time},
       });
     }
@@ -466,21 +466,34 @@ bool Project::deserialize(const QJsonObject& data, UndoActionFlags flags)
 
       for (const auto& animation_data_key : animation_data.keys())
       {
-        const auto anim        = animation_data[animation_data_key];
-        const int  anim_index  = newAnimationRaw(animation_data_key, anim["frame_rate"].toInt());
-        Animation* anim_obj    = (Animation*)m_AnimationList.item(anim_index, 0);
-        QJsonArray frames_data = anim["frames"].toArray();
+        const auto   anim               = animation_data[animation_data_key];
+        const int    anim_index         = newAnimationRaw(animation_data_key, anim["frame_rate"].toInt());
+        Animation*   anim_obj           = (Animation*)m_AnimationList.item(anim_index, 0);
+        QJsonArray   frames_data        = anim["frames"].toArray();
+        const double default_frame_time = anim_obj->frameTime();
 
         for (const auto& frame : frames_data)
         {
-          const auto frame_data = frame.toObject();
-          const auto abs_path   = frame_data["full_path"].toString();
-          const auto frame_src  = m_ImageLibrary->findFrameSource(abs_path);
+          const QJsonObject frame_data = frame.toObject();
+          const QString     rel_path   = frame_data["rel_path"].toString();
+          const QString     abs_path   = m_ProjectFile->absoluteFilePath(rel_path);
+          const auto        frame_src  = m_ImageLibrary->findFrameSource(abs_path);
 
-          anim_obj->addFrame(
-           AnimationFrameInstance(
-            frame_src,
-            (float)frame_data["frame_time"].toDouble(1.0 / (double)anim_obj->frame_rate)));
+#if 0
+          if (rel_path.isEmpty())
+          {
+              // TODO(SR): Error message.
+              continue;
+          }
+#endif
+
+          if (!frame_src)
+          {
+            // TODO(SR): Error message.
+            continue;
+          }
+
+          anim_obj->addFrame(AnimationFrameInstance(frame_src, (float)frame_data["frame_time"].toDouble(default_frame_time)));
         }
       }
 
@@ -530,7 +543,7 @@ void Project::regenerateAtlasExport()
 
     const auto&                  loaded_images_keys = m_ImageLibrary->loadedImageList();
     QMap<QString, std::uint32_t> frame_to_index     = {};
-    const unsigned int           atlas_width        = roundToUpperMultiple(m_SpriteSheetImageSize, m_SpriteSheetFrameSize);  // TODO(SR): This policy is probrably stupid and makes 'm_SpriteSheetImageSize' nearly useless from the user's perspectiv.e
+    const unsigned int           atlas_width        = roundToUpperMultiple(m_SpriteSheetImageSize, m_SpriteSheetFrameSize);  // TODO(SR): This policy is probably stupid and makes 'm_SpriteSheetImageSize' nearly useless from the user's perspectiv.e
     const unsigned int           num_frame_cols     = atlas_width / m_SpriteSheetFrameSize;
     const unsigned int           num_frame_rows     = std::ceil(static_cast<float>(num_images) / static_cast<float>(num_frame_cols));
     const unsigned int           atlas_height       = num_frame_rows * m_SpriteSheetFrameSize;

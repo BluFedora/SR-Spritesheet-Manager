@@ -286,14 +286,15 @@ void Timeline::onTimerTick()
     src_frame.right_resize = lerpQRect(src_frame.right_resize, lerp_factor, dst_frame.right_resize);
   }
 
+  // Scrubber Logic
   {
-    if (m_IsDraggingScrubber && !m_FrameInfos.empty())
+    if (m_IsDraggingScrubber && !m_DesiredFrameInfos.empty())
     {
       bool found_frame = false;
 
-      for (int i = 0; i < int(m_FrameInfos.size()); ++i)
+      for (int i = 0; i < int(m_DesiredFrameInfos.size()); ++i)
       {
-        const auto& frame_info     = m_FrameInfos[i];
+        const auto& frame_info     = m_DesiredFrameInfos[i];
         auto        inf_image_rect = frame_info.image;
 
         inf_image_rect.setLeft(frame_info.left_resize.left());
@@ -337,7 +338,7 @@ void Timeline::onTimerTick()
         }
         else
         {
-          m_CurrentAnimation->previewed_frame_time = m_FrameInfos[new_frame].frame_time;
+          m_CurrentAnimation->previewed_frame_time = m_DesiredFrameInfos[new_frame].frame_time;
         }
       }
     }
@@ -559,8 +560,8 @@ void Timeline::paintEvent(QPaintEvent* event)
         painter.fillPath(text_path, Qt::white);
       }
     }
-
-    if (false && m_HoveredDraggedItem.drag_mode != FrameDragMode::None)
+#if 0
+    if (m_HoveredDraggedItem.drag_mode != FrameDragMode::None)
     {
       const auto& frame_info = m_DesiredFrameInfos[m_HoveredDraggedItem.frame_rect_index];
 
@@ -583,7 +584,7 @@ void Timeline::paintEvent(QPaintEvent* event)
         }
       }
     }
-
+#endif
     if (m_DroppedFrameInfo.drag_mode != FrameDragMode::None)
     {
       const auto& frame_info = m_FrameInfos[m_DroppedFrameInfo.frame_rect_index];
@@ -594,15 +595,15 @@ void Timeline::paintEvent(QPaintEvent* event)
           break;
         case FrameDragMode::Image:
         {
-          painter.fillRect(frame_info.image, Qt::red);
+          painter.fillRect(frame_info.image, Qt::yellow);
           break;
         }
         case FrameDragMode::Left:
-          painter.fillRect(frame_info.left_resize, Qt::red);
+          painter.fillRect(frame_info.left_resize, Qt::yellow);
           break;
         case FrameDragMode::Right:
         {
-          painter.fillRect(frame_info.right_resize, Qt::red);
+          painter.fillRect(frame_info.right_resize, Qt::yellow);
           break;
         }
       }
@@ -612,7 +613,7 @@ void Timeline::paintEvent(QPaintEvent* event)
 
     if (m_CurrentAnimation->numFrames())
     {
-      const int   previewed_frame = m_CurrentAnimation->previewed_frame;
+      const int   previewed_frame = std::clamp(m_CurrentAnimation->previewed_frame, int(0), int(m_DesiredFrameInfos.size() - 1));
       const auto& frame_info      = m_DesiredFrameInfos[previewed_frame];
 
       const int    base_x                     = frame_info.image.left();
@@ -929,28 +930,31 @@ void Timeline::mouseReleaseEvent(QMouseEvent* event)
     }
   }
 
-  const bool has_not_dragged = (event->pos() - m_MouseDownLocation).manhattanLength() < QApplication::startDragDistance();
-
-  if (has_not_dragged)
+  if (!m_IsDraggingScrubber)
   {
-    if (m_DragMode != FrameDragMode::None)
+    const bool has_not_dragged = (event->pos() - m_MouseDownLocation).manhattanLength() < QApplication::startDragDistance();
+
+    if (has_not_dragged)
     {
-      if (key_mods & Qt::ControlModifier)
+      if (m_DragMode != FrameDragMode::None)
       {
-        m_Selection.pivotClick(m_ActiveDraggedItem.frame_rect_index, true);
-      }
-      else if (key_mods & Qt::ShiftModifier)
-      {
-        m_Selection.extendClick(m_ActiveDraggedItem.frame_rect_index);
+        if (key_mods & Qt::ControlModifier)
+        {
+          m_Selection.pivotClick(m_ActiveDraggedItem.frame_rect_index, true);
+        }
+        else if (key_mods & Qt::ShiftModifier)
+        {
+          m_Selection.extendClick(m_ActiveDraggedItem.frame_rect_index);
+        }
+        else
+        {
+          m_Selection.pivotClick(m_DraggedFrameInfo, false);
+        }
       }
       else
       {
-        m_Selection.pivotClick(m_DraggedFrameInfo, false);
+        m_Selection.clear();
       }
-    }
-    else
-    {
-      m_Selection.clear();
     }
   }
 
@@ -991,7 +995,7 @@ void Timeline::dragMoveEvent(QDragMoveEvent* event)
   {
     const QPoint local_mouse_pos = event->pos();
 
-    m_DroppedFrameInfo = infoAt(local_mouse_pos, false);
+    m_DroppedFrameInfo = infoAt(local_mouse_pos, false, true);
 
     if (m_DroppedFrameInfo.drag_mode != FrameDragMode::None)
     {
@@ -1269,7 +1273,7 @@ void Timeline::drawFrame(const QPixmap& atlas_image, QPainter& painter, int inde
 
   // Frame Number
 
-  const QString name_str = tr("#%1").arg(index);
+  const QString name_str = tr("#%1").arg(index + 1);
   QPainterPath  text_path;
 
   text_path.addText(frame_rect.topLeft() - QPoint(0, k_FontHeight / 2 + 2), painter.font(), name_str);
@@ -1281,7 +1285,7 @@ void Timeline::drawFrame(const QPixmap& atlas_image, QPainter& painter, int inde
   painter.fillPath(text_path, Qt::white);
 }
 
-FrameInfoAtPoint Timeline::infoAt(const QPoint& local_mouse_pos, bool allow_active_item) const
+FrameInfoAtPoint Timeline::infoAt(const QPoint& local_mouse_pos, bool allow_active_item, bool allow_last_frame_right_ext) const
 {
   FrameInfoAtPoint ret         = {};
   int              frame_index = 0;
@@ -1290,6 +1294,14 @@ FrameInfoAtPoint Timeline::infoAt(const QPoint& local_mouse_pos, bool allow_acti
   {
     if (allow_active_item || frame_index != m_ActiveDraggedItem.frame_rect_index)
     {
+      QRect right_resize = frame.right_resize;
+
+      // The last frame should have it's bounds extended.
+      if (allow_last_frame_right_ext && &frame == &m_FrameInfos.back())
+      {
+        right_resize.setRight(rect().right());
+      }
+
       if (frame.left_resize.contains(local_mouse_pos))
       {
         ret.frame_rect_index = frame_index;
@@ -1298,10 +1310,10 @@ FrameInfoAtPoint Timeline::infoAt(const QPoint& local_mouse_pos, bool allow_acti
         break;
       }
 
-      if (frame.right_resize.contains(local_mouse_pos))
+      if (right_resize.contains(local_mouse_pos))
       {
         ret.frame_rect_index = frame_index;
-        ret.drag_offset      = frame.right_resize.topLeft() - local_mouse_pos;
+        ret.drag_offset      = right_resize.topLeft() - local_mouse_pos;
         ret.drag_mode        = FrameDragMode::Right;
         break;
       }
@@ -1400,4 +1412,17 @@ QRect Timeline::selectionRect() const
    std::min(local_mouse_pos.y(), m_MouseDownLocation.y()),
    std::abs(local_mouse_pos.x() - m_MouseDownLocation.x()),
    std::abs(local_mouse_pos.y() - m_MouseDownLocation.y()));
+}
+
+void TimelineSelection::updateFullyOrderedIndices() const
+{
+  fully_ordered_indices = selection;
+
+  if (active_selection.isValid())
+  {
+    for (int item = active_selection.start_idx; item <= active_selection.end_idx; ++item)
+    {
+      fully_ordered_indices.insert(item);
+    }
+  }
 }

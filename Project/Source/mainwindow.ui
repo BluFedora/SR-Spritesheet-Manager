@@ -19,7 +19,7 @@
    </font>
   </property>
   <property name="windowTitle">
-   <string> [*] - SR Spritesheet Manager v2020.07.1</string>
+   <string> [*] - SR Spritesheet Animator v2020.09.01</string>
   </property>
   <property name="windowIcon">
    <iconset resource="../Resources/ResourceFile.qrc">
@@ -693,7 +693,10 @@
   </widget>
   <widget class="QToolBar" name="toolBar">
    <property name="windowTitle">
-    <string>toolBar</string>
+    <string>SRSA Toolbar</string>
+   </property>
+   <property name="orientation">
+    <enum>Qt::Horizontal</enum>
    </property>
    <attribute name="toolBarArea">
     <enum>TopToolBarArea</enum>

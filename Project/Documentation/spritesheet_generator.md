@@ -1,6 +1,7 @@
-# SR Sprite Sheet Manager (SRSM)
+# SR Spritesheet Animator (SRSA)
 
-This program is designed to help manage making sprite sheet texture atlases with associated animations.
+This program is designed to help managing spritesheet animations with a live preview in custom game engines.
+
 
 ## Features
 - Packing multiple images into one big atlas for efficient rendering.
@@ -168,7 +169,17 @@ References:
 
 # Runtimes I Should Support:
 
+## Not a Good Use Of Time
+
 [ ] > Unity
+  - This makes no sense as this 'feature' is built in.
+[ ] > HTML5 / CSS sprites
+  - Web stuff doesn't benefit much from live reload since any good web dev stack already has live reload.
+
+## Good Use Of Time
+
+[-] > Custom C/++
+
 [ ] > Cocos2D-X
 [ ] > Cocos2D
 [ ] > SpriteKit
@@ -181,5 +192,5 @@ References:
 [ ] > Phaser
 [ ] > MelonJS
 [ ] > Monogame
-[ ] > HTML5 / CSS sprites
-[ ] > Custom C/++
+
+
