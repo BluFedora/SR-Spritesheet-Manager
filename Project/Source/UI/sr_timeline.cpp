@@ -34,11 +34,11 @@ static const QBrush k_TextTrackBrush              = QBrush(QColor(20, 20, 20, 25
 static const int    k_FrameTrackPadding           = 2 + k_FontHeight;
 static const int    k_FramePadding                = 6;
 static const int    k_DblFramePadding             = k_FramePadding * 2;
-static const float  k_MinFrameTime                = 1.0f / 60.0f;
 static const int    k_FrameInnerPadding           = 2;
 static const QBrush k_FrameInnerPaddingHightlight = QBrush(QColor(200, 200, 200, 40));
 static const QBrush k_FrameInnerPaddingShading    = QBrush(QColor(20, 20, 20, 200));
 static const QColor k_TickMarkColor               = QColor(20, 20, 20, 200);
+static const float  k_MinFrameTime                = 1.0f / 120.0f;
 
 // NOTE(SR):
 //   Functions because QRect is stupid...
@@ -234,7 +234,7 @@ void Timeline::onAnimationChanged(Animation* anim)
 {
   if (m_CurrentAnimation == anim)
   {
-    m_Selection.clear();
+    // m_Selection.clear();
     recalculateTimelineSize();
   }
 }
@@ -762,7 +762,7 @@ void Timeline::mouseMoveEvent(QMouseEvent* event)
 
       if (distance_from_nearest_stap <= 2)
       {
-        frame_width = distance_from_nearest_stap == distance_from_lower_stap ? lower_snap : upper_snap;
+        // frame_width = distance_from_nearest_stap == distance_from_lower_stap ? lower_snap : upper_snap;
       }
 
       const float new_frame_time = qMax(base_frame_time * (float(frame_width) / float(default_width)), k_MinFrameTime);
