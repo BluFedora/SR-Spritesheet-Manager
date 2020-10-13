@@ -7,9 +7,9 @@
 //
 
 #include "main.hpp"                   // g_Server
-#include "Data/srsm_settings.hpp"     // Settings
+#include "Data/sr_settings.hpp"     // Settings
 #include "UI/sr_welcome_window.hpp"   // WelcomeWindow
-#include "UI/srsm_image_library.hpp"  // AnimationFrameSourcePtr
+#include "UI/sr_image_library.hpp"  // AnimationFrameSourcePtr
 
 #include <QApplication>     // QApplication
 #include <QDir>             // For MacOS

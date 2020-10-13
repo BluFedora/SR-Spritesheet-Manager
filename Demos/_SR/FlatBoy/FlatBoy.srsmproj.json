@@ -1,0 +1,678 @@
+{
+    "animations": {
+        "Dead": {
+            "frame_rate": 30,
+            "frames": [
+                {
+                    "frame_time": 0.019899684935808182,
+                    "rel_path": "Images/Dead (1).png"
+                },
+                {
+                    "frame_time": 0.019899684935808182,
+                    "rel_path": "Images/Dead (2).png"
+                },
+                {
+                    "frame_time": 0.019899684935808182,
+                    "rel_path": "Images/Dead (3).png"
+                },
+                {
+                    "frame_time": 0.019899684935808182,
+                    "rel_path": "Images/Dead (4).png"
+                },
+                {
+                    "frame_time": 0.019899684935808182,
+                    "rel_path": "Images/Dead (5).png"
+                },
+                {
+                    "frame_time": 0.019899684935808182,
+                    "rel_path": "Images/Dead (6).png"
+                },
+                {
+                    "frame_time": 0.019899684935808182,
+                    "rel_path": "Images/Dead (7).png"
+                },
+                {
+                    "frame_time": 0.019899684935808182,
+                    "rel_path": "Images/Dead (8).png"
+                },
+                {
+                    "frame_time": 0.019899684935808182,
+                    "rel_path": "Images/Dead (9).png"
+                },
+                {
+                    "frame_time": 0.019899684935808182,
+                    "rel_path": "Images/Dead (10).png"
+                },
+                {
+                    "frame_time": 0.019899684935808182,
+                    "rel_path": "Images/Dead (11).png"
+                },
+                {
+                    "frame_time": 0.019899684935808182,
+                    "rel_path": "Images/Dead (12).png"
+                },
+                {
+                    "frame_time": 0.019899684935808182,
+                    "rel_path": "Images/Dead (13).png"
+                },
+                {
+                    "frame_time": 0.019899684935808182,
+                    "rel_path": "Images/Dead (14).png"
+                },
+                {
+                    "frame_time": 0.01793709769845009,
+                    "rel_path": "Images/Dead (15).png"
+                }
+            ]
+        },
+        "Idle": {
+            "frame_rate": 10,
+            "frames": [
+                {
+                    "frame_time": 0.10000000149011612,
+                    "rel_path": "Images/Idle (1).png"
+                },
+                {
+                    "frame_time": 0.10000000149011612,
+                    "rel_path": "Images/Idle (2).png"
+                },
+                {
+                    "frame_time": 0.10000000149011612,
+                    "rel_path": "Images/Idle (3).png"
+                },
+                {
+                    "frame_time": 0.10000000149011612,
+                    "rel_path": "Images/Idle (4).png"
+                },
+                {
+                    "frame_time": 0.10000000149011612,
+                    "rel_path": "Images/Idle (5).png"
+                },
+                {
+                    "frame_time": 0.10000000149011612,
+                    "rel_path": "Images/Idle (6).png"
+                },
+                {
+                    "frame_time": 0.10000000149011612,
+                    "rel_path": "Images/Idle (7).png"
+                },
+                {
+                    "frame_time": 0.10000000149011612,
+                    "rel_path": "Images/Idle (8).png"
+                },
+                {
+                    "frame_time": 0.10000000149011612,
+                    "rel_path": "Images/Idle (9).png"
+                },
+                {
+                    "frame_time": 0.10000000149011612,
+                    "rel_path": "Images/Idle (10).png"
+                },
+                {
+                    "frame_time": 0.10000000149011612,
+                    "rel_path": "Images/Idle (11).png"
+                },
+                {
+                    "frame_time": 0.10000000149011612,
+                    "rel_path": "Images/Idle (12).png"
+                },
+                {
+                    "frame_time": 0.10000000149011612,
+                    "rel_path": "Images/Idle (13).png"
+                },
+                {
+                    "frame_time": 0.10000000149011612,
+                    "rel_path": "Images/Idle (14).png"
+                },
+                {
+                    "frame_time": 0.10000000149011612,
+                    "rel_path": "Images/Idle (15).png"
+                }
+            ]
+        },
+        "Jump": {
+            "frame_rate": 10,
+            "frames": [
+                {
+                    "frame_time": 0.06501571834087372,
+                    "rel_path": "Images/Jump (1).png"
+                },
+                {
+                    "frame_time": 0.06501571834087372,
+                    "rel_path": "Images/Jump (2).png"
+                },
+                {
+                    "frame_time": 0.06501571834087372,
+                    "rel_path": "Images/Jump (3).png"
+                },
+                {
+                    "frame_time": 0.06501571834087372,
+                    "rel_path": "Images/Jump (4).png"
+                },
+                {
+                    "frame_time": 0.06501571834087372,
+                    "rel_path": "Images/Jump (5).png"
+                },
+                {
+                    "frame_time": 0.06501571834087372,
+                    "rel_path": "Images/Jump (6).png"
+                },
+                {
+                    "frame_time": 0.06501571834087372,
+                    "rel_path": "Images/Jump (7).png"
+                },
+                {
+                    "frame_time": 0.06501571834087372,
+                    "rel_path": "Images/Jump (8).png"
+                },
+                {
+                    "frame_time": 0.06501571834087372,
+                    "rel_path": "Images/Jump (9).png"
+                },
+                {
+                    "frame_time": 0.06501571834087372,
+                    "rel_path": "Images/Jump (10).png"
+                },
+                {
+                    "frame_time": 0.06501571834087372,
+                    "rel_path": "Images/Jump (11).png"
+                },
+                {
+                    "frame_time": 0.06501571834087372,
+                    "rel_path": "Images/Jump (12).png"
+                },
+                {
+                    "frame_time": 0.06501571834087372,
+                    "rel_path": "Images/Jump (13).png"
+                },
+                {
+                    "frame_time": 0.06501571834087372,
+                    "rel_path": "Images/Jump (14).png"
+                },
+                {
+                    "frame_time": 0.06501571834087372,
+                    "rel_path": "Images/Jump (15).png"
+                }
+            ]
+        },
+        "Run": {
+            "frame_rate": 60,
+            "frames": [
+                {
+                    "frame_time": 0.026701100170612335,
+                    "rel_path": "Images/Run (1).png"
+                },
+                {
+                    "frame_time": 0.026701100170612335,
+                    "rel_path": "Images/Run (2).png"
+                },
+                {
+                    "frame_time": 0.026701100170612335,
+                    "rel_path": "Images/Run (3).png"
+                },
+                {
+                    "frame_time": 0.026701100170612335,
+                    "rel_path": "Images/Run (4).png"
+                },
+                {
+                    "frame_time": 0.026701100170612335,
+                    "rel_path": "Images/Run (5).png"
+                },
+                {
+                    "frame_time": 0.026701100170612335,
+                    "rel_path": "Images/Run (6).png"
+                },
+                {
+                    "frame_time": 0.026701100170612335,
+                    "rel_path": "Images/Run (7).png"
+                },
+                {
+                    "frame_time": 0.026701100170612335,
+                    "rel_path": "Images/Run (8).png"
+                },
+                {
+                    "frame_time": 0.026701100170612335,
+                    "rel_path": "Images/Run (9).png"
+                },
+                {
+                    "frame_time": 0.026701100170612335,
+                    "rel_path": "Images/Run (10).png"
+                },
+                {
+                    "frame_time": 0.026701100170612335,
+                    "rel_path": "Images/Run (11).png"
+                },
+                {
+                    "frame_time": 0.026701100170612335,
+                    "rel_path": "Images/Run (12).png"
+                },
+                {
+                    "frame_time": 0.02786271646618843,
+                    "rel_path": "Images/Run (13).png"
+                },
+                {
+                    "frame_time": 0.02786271646618843,
+                    "rel_path": "Images/Run (14).png"
+                },
+                {
+                    "frame_time": 0.02786271646618843,
+                    "rel_path": "Images/Run (15).png"
+                }
+            ]
+        },
+        "Walk": {
+            "frame_rate": 60,
+            "frames": [
+                {
+                    "frame_time": 0.03186623007059097,
+                    "rel_path": "Images/Walk (1).png"
+                },
+                {
+                    "frame_time": 0.03186623007059097,
+                    "rel_path": "Images/Walk (2).png"
+                },
+                {
+                    "frame_time": 0.03186623007059097,
+                    "rel_path": "Images/Walk (3).png"
+                },
+                {
+                    "frame_time": 0.03186623007059097,
+                    "rel_path": "Images/Walk (4).png"
+                },
+                {
+                    "frame_time": 0.03186623007059097,
+                    "rel_path": "Images/Walk (5).png"
+                },
+                {
+                    "frame_time": 0.03186623007059097,
+                    "rel_path": "Images/Walk (6).png"
+                },
+                {
+                    "frame_time": 0.03186623007059097,
+                    "rel_path": "Images/Walk (7).png"
+                },
+                {
+                    "frame_time": 0.03186623007059097,
+                    "rel_path": "Images/Walk (8).png"
+                },
+                {
+                    "frame_time": 0.03186623007059097,
+                    "rel_path": "Images/Walk (9).png"
+                },
+                {
+                    "frame_time": 0.03186623007059097,
+                    "rel_path": "Images/Walk (10).png"
+                },
+                {
+                    "frame_time": 0.03186623007059097,
+                    "rel_path": "Images/Walk (11).png"
+                },
+                {
+                    "frame_time": 0.03186623007059097,
+                    "rel_path": "Images/Walk (12).png"
+                },
+                {
+                    "frame_time": 0.03186623007059097,
+                    "rel_path": "Images/Walk (13).png"
+                },
+                {
+                    "frame_time": 0.03186623007059097,
+                    "rel_path": "Images/Walk (14).png"
+                },
+                {
+                    "frame_time": 0.03186623007059097,
+                    "rel_path": "Images/Walk (15).png"
+                }
+            ]
+        }
+    },
+    "image_library": {
+        "isExpanded": false,
+        "items": [
+            {
+                "isExpanded": true,
+                "items": [
+                    {
+                        "rel_path": "Images/Dead (1).png",
+                        "type": "image"
+                    },
+                    {
+                        "rel_path": "Images/Dead (2).png",
+                        "type": "image"
+                    },
+                    {
+                        "rel_path": "Images/Dead (3).png",
+                        "type": "image"
+                    },
+                    {
+                        "rel_path": "Images/Dead (4).png",
+                        "type": "image"
+                    },
+                    {
+                        "rel_path": "Images/Dead (5).png",
+                        "type": "image"
+                    },
+                    {
+                        "rel_path": "Images/Dead (6).png",
+                        "type": "image"
+                    },
+                    {
+                        "rel_path": "Images/Dead (7).png",
+                        "type": "image"
+                    },
+                    {
+                        "rel_path": "Images/Dead (8).png",
+                        "type": "image"
+                    },
+                    {
+                        "rel_path": "Images/Dead (9).png",
+                        "type": "image"
+                    },
+                    {
+                        "rel_path": "Images/Dead (10).png",
+                        "type": "image"
+                    },
+                    {
+                        "rel_path": "Images/Dead (11).png",
+                        "type": "image"
+                    },
+                    {
+                        "rel_path": "Images/Dead (12).png",
+                        "type": "image"
+                    },
+                    {
+                        "rel_path": "Images/Dead (13).png",
+                        "type": "image"
+                    },
+                    {
+                        "rel_path": "Images/Dead (14).png",
+                        "type": "image"
+                    },
+                    {
+                        "rel_path": "Images/Dead (15).png",
+                        "type": "image"
+                    }
+                ],
+                "name": "Dead",
+                "type": "folder"
+            },
+            {
+                "isExpanded": false,
+                "items": [
+                    {
+                        "rel_path": "Images/Idle (1).png",
+                        "type": "image"
+                    },
+                    {
+                        "rel_path": "Images/Idle (2).png",
+                        "type": "image"
+                    },
+                    {
+                        "rel_path": "Images/Idle (3).png",
+                        "type": "image"
+                    },
+                    {
+                        "rel_path": "Images/Idle (4).png",
+                        "type": "image"
+                    },
+                    {
+                        "rel_path": "Images/Idle (5).png",
+                        "type": "image"
+                    },
+                    {
+                        "rel_path": "Images/Idle (6).png",
+                        "type": "image"
+                    },
+                    {
+                        "rel_path": "Images/Idle (7).png",
+                        "type": "image"
+                    },
+                    {
+                        "rel_path": "Images/Idle (8).png",
+                        "type": "image"
+                    },
+                    {
+                        "rel_path": "Images/Idle (9).png",
+                        "type": "image"
+                    },
+                    {
+                        "rel_path": "Images/Idle (10).png",
+                        "type": "image"
+                    },
+                    {
+                        "rel_path": "Images/Idle (11).png",
+                        "type": "image"
+                    },
+                    {
+                        "rel_path": "Images/Idle (12).png",
+                        "type": "image"
+                    },
+                    {
+                        "rel_path": "Images/Idle (13).png",
+                        "type": "image"
+                    },
+                    {
+                        "rel_path": "Images/Idle (14).png",
+                        "type": "image"
+                    },
+                    {
+                        "rel_path": "Images/Idle (15).png",
+                        "type": "image"
+                    }
+                ],
+                "name": "Idle",
+                "type": "folder"
+            },
+            {
+                "isExpanded": false,
+                "items": [
+                    {
+                        "rel_path": "Images/Jump (1).png",
+                        "type": "image"
+                    },
+                    {
+                        "rel_path": "Images/Jump (2).png",
+                        "type": "image"
+                    },
+                    {
+                        "rel_path": "Images/Jump (3).png",
+                        "type": "image"
+                    },
+                    {
+                        "rel_path": "Images/Jump (4).png",
+                        "type": "image"
+                    },
+                    {
+                        "rel_path": "Images/Jump (5).png",
+                        "type": "image"
+                    },
+                    {
+                        "rel_path": "Images/Jump (6).png",
+                        "type": "image"
+                    },
+                    {
+                        "rel_path": "Images/Jump (7).png",
+                        "type": "image"
+                    },
+                    {
+                        "rel_path": "Images/Jump (8).png",
+                        "type": "image"
+                    },
+                    {
+                        "rel_path": "Images/Jump (9).png",
+                        "type": "image"
+                    },
+                    {
+                        "rel_path": "Images/Jump (10).png",
+                        "type": "image"
+                    },
+                    {
+                        "rel_path": "Images/Jump (11).png",
+                        "type": "image"
+                    },
+                    {
+                        "rel_path": "Images/Jump (12).png",
+                        "type": "image"
+                    },
+                    {
+                        "rel_path": "Images/Jump (13).png",
+                        "type": "image"
+                    },
+                    {
+                        "rel_path": "Images/Jump (14).png",
+                        "type": "image"
+                    },
+                    {
+                        "rel_path": "Images/Jump (15).png",
+                        "type": "image"
+                    }
+                ],
+                "name": "Jump",
+                "type": "folder"
+            },
+            {
+                "isExpanded": false,
+                "items": [
+                    {
+                        "rel_path": "Images/Run (1).png",
+                        "type": "image"
+                    },
+                    {
+                        "rel_path": "Images/Run (2).png",
+                        "type": "image"
+                    },
+                    {
+                        "rel_path": "Images/Run (3).png",
+                        "type": "image"
+                    },
+                    {
+                        "rel_path": "Images/Run (4).png",
+                        "type": "image"
+                    },
+                    {
+                        "rel_path": "Images/Run (5).png",
+                        "type": "image"
+                    },
+                    {
+                        "rel_path": "Images/Run (6).png",
+                        "type": "image"
+                    },
+                    {
+                        "rel_path": "Images/Run (7).png",
+                        "type": "image"
+                    },
+                    {
+                        "rel_path": "Images/Run (8).png",
+                        "type": "image"
+                    },
+                    {
+                        "rel_path": "Images/Run (9).png",
+                        "type": "image"
+                    },
+                    {
+                        "rel_path": "Images/Run (10).png",
+                        "type": "image"
+                    },
+                    {
+                        "rel_path": "Images/Run (11).png",
+                        "type": "image"
+                    },
+                    {
+                        "rel_path": "Images/Run (12).png",
+                        "type": "image"
+                    },
+                    {
+                        "rel_path": "Images/Run (13).png",
+                        "type": "image"
+                    },
+                    {
+                        "rel_path": "Images/Run (14).png",
+                        "type": "image"
+                    },
+                    {
+                        "rel_path": "Images/Run (15).png",
+                        "type": "image"
+                    }
+                ],
+                "name": "Run",
+                "type": "folder"
+            },
+            {
+                "isExpanded": false,
+                "items": [
+                    {
+                        "rel_path": "Images/Walk (1).png",
+                        "type": "image"
+                    },
+                    {
+                        "rel_path": "Images/Walk (2).png",
+                        "type": "image"
+                    },
+                    {
+                        "rel_path": "Images/Walk (3).png",
+                        "type": "image"
+                    },
+                    {
+                        "rel_path": "Images/Walk (4).png",
+                        "type": "image"
+                    },
+                    {
+                        "rel_path": "Images/Walk (5).png",
+                        "type": "image"
+                    },
+                    {
+                        "rel_path": "Images/Walk (6).png",
+                        "type": "image"
+                    },
+                    {
+                        "rel_path": "Images/Walk (7).png",
+                        "type": "image"
+                    },
+                    {
+                        "rel_path": "Images/Walk (8).png",
+                        "type": "image"
+                    },
+                    {
+                        "rel_path": "Images/Walk (9).png",
+                        "type": "image"
+                    },
+                    {
+                        "rel_path": "Images/Walk (10).png",
+                        "type": "image"
+                    },
+                    {
+                        "rel_path": "Images/Walk (11).png",
+                        "type": "image"
+                    },
+                    {
+                        "rel_path": "Images/Walk (12).png",
+                        "type": "image"
+                    },
+                    {
+                        "rel_path": "Images/Walk (13).png",
+                        "type": "image"
+                    },
+                    {
+                        "rel_path": "Images/Walk (14).png",
+                        "type": "image"
+                    },
+                    {
+                        "rel_path": "Images/Walk (15).png",
+                        "type": "image"
+                    }
+                ],
+                "name": "Walk",
+                "type": "folder"
+            }
+        ],
+        "name": "",
+        "type": "folder"
+    },
+    "last_saved_path": "C:/Repos/SR-Spritesheet-Manager/Demos/_SR/FlatBoy",
+    "m_EditUUID": "2bdd64f2-c4d9-4926-9d5a-37605b8763af",
+    "m_SelectedAnimation": -1,
+    "m_SelectedFrame": -1,
+    "m_SpriteSheetFrameSize": 256,
+    "m_SpriteSheetImageSize": 2048,
+    "name": "FlatBoy"
+}

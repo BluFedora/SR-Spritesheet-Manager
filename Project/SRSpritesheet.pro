@@ -12,39 +12,39 @@ TEMPLATE = app
 CONFIG += c++17
 
 SOURCES += \
-  Source/Data/srsm_animation.cpp \
-  Source/Data/srsm_project.cpp \
-  Source/Data/srsm_settings.cpp \
+  Source/Data/sr_animation.cpp \
+  Source/Data/sr_project.cpp \
+  Source/Data/sr_settings.cpp \
+  Source/UI/sr_animated_sprite.cpp \
+  Source/UI/sr_animation_preview.cpp \
+  Source/UI/sr_image_library.cpp \
+  Source/UI/sr_timeline.cpp \
   Source/UI/sr_welcome_window.cpp \
-  Source/UI/srsm_animated_sprite.cpp \
-  Source/UI/srsm_animation_preview.cpp \
-  Source/UI/srsm_image_library.cpp \
-  Source/UI/srsm_timeline.cpp \
   Source/main.cpp \
-  Source/mainwindow.cpp \
-  Source/newanimation.cpp
+  Source/sr_main_window.cpp \
+  Source/sr_new_animation_dialog.cpp
 
 HEADERS  += \
-    Source/Data/srsm_animation.hpp \
-    Source/Data/srsm_project.hpp \
-    Source/Data/srsm_settings.hpp \
+    Source/Data/sr_animation.hpp \
+    Source/Data/sr_project.hpp \
+    Source/Data/sr_settings.hpp \
+    Source/UI/sr_animated_sprite.hpp \
+    Source/UI/sr_animation_preview.hpp \
+    Source/UI/sr_image_library.hpp \
+    Source/UI/sr_timeline.hpp \
     Source/UI/sr_welcome_window.hpp \
-    Source/UI/srsm_animated_sprite.hpp \
-    Source/UI/srsm_animation_preview.hpp \
-    Source/UI/srsm_image_library.hpp \
-    Source/UI/srsm_timeline.hpp \
     Source/main.hpp \
-    Source/mainwindow.hpp \
-    Source/newanimation.hpp
+    Source/sr_main_window.hpp \
+    Source/sr_new_animation_dialog.hpp
 
 INCLUDEPATH += Source/
 
 FORMS    += \
+    Source/UI/sr_animation_preview.ui \
+    Source/UI/sr_timeline.ui \
     Source/UI/sr_welcome_window.ui \
-    Source/UI/srsm_animation_preview.ui \
-    Source/UI/srsm_timeline.ui \
-    Source/mainwindow.ui \
-    Source/newanimation.ui
+    Source/sr_main_window.ui \
+    Source/sr_new_animation_dialog.ui
 
 # warn on *any* usage of deprecated APIs, no matter in which Qt version they got marked as deprecated ...
 DEFINES += QT_DEPRECATED_WARNINGS
