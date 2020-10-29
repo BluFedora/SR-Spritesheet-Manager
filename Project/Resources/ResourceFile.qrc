@@ -8,5 +8,7 @@
         <file>Images/Runtime/bg-grid.png</file>
         <file>Images/Icons/x_button.png</file>
         <file>Images/Runtime/no-frames-in-animation.png</file>
+        <file>Images/Runtime/scene_docs.png</file>
     </qresource>
+    <qresource prefix="/"/>
 </RCC>

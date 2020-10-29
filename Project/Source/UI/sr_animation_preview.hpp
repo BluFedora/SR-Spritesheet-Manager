@@ -35,6 +35,7 @@ class AnimationPreview : public QGraphicsView
   AnimatedSprite*       m_Sprite;
   QPixmap               m_NoSelectedAnimPixmap;
   QPixmap               m_NoAnimFramesPixmap;
+  QPixmap               m_SceneDocImage;
   Animation*            m_CurrentAnim;
   bfAnimation2DCtx*     m_AnimCtx;
   bfAnim2DScene*        m_Anim2DScene;
@@ -66,6 +67,7 @@ class AnimationPreview : public QGraphicsView
   void keyPressEvent(QKeyEvent* event) override;
   void keyReleaseEvent(QKeyEvent* event) override;
   void mouseMoveEvent(QMouseEvent* event) override;
+  void drawForeground(QPainter* painter, const QRectF& rect) override;
 
  private:
   void fitSpriteIntoView();

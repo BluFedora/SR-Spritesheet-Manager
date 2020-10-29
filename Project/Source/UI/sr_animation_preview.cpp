@@ -33,6 +33,7 @@ AnimationPreview::AnimationPreview(QWidget* parent) :
   m_Sprite{nullptr},
   m_NoSelectedAnimPixmap{":/Res/Images/Runtime/no-animation-selected.png"},
   m_NoAnimFramesPixmap{":/Res/Images/Runtime/no-frames-in-animation.png"},
+  m_SceneDocImage{":/Res/Images/Runtime/scene_docs.png"},
   m_CurrentAnim{nullptr},
   m_AnimCtx{nullptr},
   m_Anim2DScene{nullptr},
@@ -178,6 +179,7 @@ void AnimationPreview::wheelEvent(QWheelEvent* event)
 
 void AnimationPreview::keyPressEvent(QKeyEvent* event)
 {
+  // No Modifiers
   if (event->key() == Qt::Key_Space)
   {
     if (!event->isAutoRepeat())
@@ -185,15 +187,18 @@ void AnimationPreview::keyPressEvent(QKeyEvent* event)
       setDragMode(QGraphicsView::ScrollHandDrag);
     }
   }
-  else if (event->key() == Qt::Key_0)
+  else if (event->modifiers() & Qt::ControlModifier)  // Control Modifier
   {
-    fitSpriteOneToOne();
+    if (event->key() == Qt::Key_0)
+    {
+      fitSpriteOneToOne();
+    }
+    else if (event->key() == Qt::Key_1)
+    {
+      fitSpriteIntoView();
+    }
   }
-  else if (event->key() == Qt::Key_1)
-  {
-    fitSpriteIntoView();
-  }
-  else
+  else  // Let Qt Handle it
   {
     QGraphicsView::keyPressEvent(event);
   }
@@ -217,6 +222,23 @@ void AnimationPreview::keyReleaseEvent(QKeyEvent* event)
 void AnimationPreview::mouseMoveEvent(QMouseEvent* event)
 {
   QGraphicsView::mouseMoveEvent(event);
+}
+
+void AnimationPreview::drawForeground(QPainter* painter, const QRectF& rect)
+{
+  const QSize   image_size             = m_SceneDocImage.size();
+  const QPoint  screen_space_top_left  = QPoint(10, 10);
+  const QPoint  screen_space_bot_right = screen_space_top_left + QPoint(image_size.width(), image_size.height());
+  const QPointF top_left               = mapToScene(screen_space_top_left);
+  const QPointF bot_right              = mapToScene(screen_space_bot_right);
+  const QRectF  target_rect            = QRectF(top_left, bot_right);
+  const QRectF  source_rect            = QRectF(0.0f, 0.0f, image_size.width(), image_size.height());
+
+  // Should always be true since we are projecting screenspace coords into world space but whatever...
+  if (rect.intersects(target_rect))
+  {
+    painter->drawPixmap(target_rect, m_SceneDocImage, source_rect);
+  }
 }
 
 void AnimationPreview::onAnimationSelected(Animation* anim)

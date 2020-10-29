@@ -60,9 +60,11 @@ DISTFILES +=
 RESOURCES += \
   Resources/ResourceFile.qrc
 
-win32:CONFIG(release, debug|release): LIBS += -LE:/Repos/bfEngine/bin/ -lbf.Animation2DDLL
-else:win32:CONFIG(debug, debug|release): LIBS += -LE:/Repos/bfEngine/bin/ -lbf.Animation2DDLL
-else:unix: LIBS += -LE:/Repos/bfEngine/bin/ -lbf.Animation2DDLL
+LIBS += -LC:/Repos/bfEngine/bin/
 
-INCLUDEPATH += E:/Repos/bfEngine/Engine/Anim2D/include
-DEPENDPATH += E:/Repos/bfEngine/BifrostEngine/bin
+win32:CONFIG(release, debug|release): LIBS += -lbf.Animation2DDLL
+else:win32:CONFIG(debug, debug|release): LIBS += -lbf.Animation2DDLL
+else:unix: LIBS += -lbf.Animation2DDLL
+
+INCLUDEPATH += C:/Repos/bfEngine/Engine/Anim2D/include
+DEPENDPATH += C:/Repos/bfEngine/BifrostEngine/bin
