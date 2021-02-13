@@ -6,10 +6,10 @@
 // Copyright (c) 2020 Shareef Abdoul-Raheem
 //
 
-#include "main.hpp"                   // g_Server
-#include "Data/sr_settings.hpp"     // Settings
-#include "UI/sr_welcome_window.hpp"   // WelcomeWindow
-#include "UI/sr_image_library.hpp"  // AnimationFrameSourcePtr
+#include "Data/sr_settings.hpp"              // Settings
+#include "Server/sr_live_reload_server.hpp"  // g_Server
+#include "UI/sr_image_library.hpp"           // AnimationFrameSourcePtr
+#include "UI/sr_welcome_window.hpp"          // WelcomeWindow
 
 #include <QApplication>     // QApplication
 #include <QDir>             // For MacOS
@@ -50,6 +50,7 @@ int main(int argc, char *argv[])
   QDir::setCurrent(bin.absolutePath());
 #endif
 
+#if 1
   QApplication::setStyle(QStyleFactory::create("Fusion"));
 
   QPalette palette;
@@ -70,6 +71,7 @@ int main(int argc, char *argv[])
   palette.setColor(QPalette::HighlightedText, Qt::black);
 
   app.setPalette(palette);
+#endif
 
   QSharedMemory shared_mem{"SRSM.AppCount", nullptr};
 
@@ -81,7 +83,7 @@ int main(int argc, char *argv[])
   }
   else
   {
-    QMessageBox::warning(nullptr, "Error", "Only one instance of this program can be opened at one.", QMessageBox::Ok, QMessageBox::Ok);
+    QMessageBox::warning(nullptr, "Error", "Only one instance of this program can be opened at once.", QMessageBox::Ok, QMessageBox::Ok);
     return 0;
   }
 
@@ -109,5 +111,3 @@ int main(int argc, char *argv[])
 
   return app_result;
 }
-
-std::unique_ptr<LiveReloadServer> g_Server = nullptr;

@@ -9,6 +9,8 @@
 #ifndef SRSM_TIMELINE_HPP
 #define SRSM_TIMELINE_HPP
 
+#include "Data/bf_property.hpp"
+
 #include <QScrollArea>
 #include <QTimer>
 #include <QWidget>
@@ -126,9 +128,9 @@ class Timeline final : public QWidget
  private:
   // UI
 
-  Ui::Timeline* ui;
-  QScrollArea*  m_ParentScrollArea;
-  int           m_FrameHeight;
+  Ui::Timeline*     ui;
+  QScrollArea*      m_ParentScrollArea;
+  bf::property<int> m_FrameHeight;
 
   // Frame Drawing
 
@@ -160,6 +162,8 @@ class Timeline final : public QWidget
 
  public:
   explicit Timeline(QWidget* parent = nullptr);
+
+  bf::property<int>& frameHeight() { return m_FrameHeight; }
 
   void setup(QScrollArea* scroll_area);
 

@@ -194,3 +194,18 @@ References:
 [ ] > Monogame
 
 
+# Feature Ideas
+
+## Animation Events
+
+Animation Events should have to be registered in some project list. This allows for easier
+adding of events since then you can just selected from this predefined list.
+
+Adding of multiple events at the same time-point should be easy.
+
+## Anchor Points
+
+- Moving them through the scene view.
+- Anchors need some way to be referenced.
+- How to have anchors persist across frames?
+- Maybe you also want to see where the anchor was on the surrounding frames? (Onion skinning)

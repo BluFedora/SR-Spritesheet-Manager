@@ -6,11 +6,25 @@
 #ifndef SRSM_MAINWINDOW_H
 #define SRSM_MAINWINDOW_H
 
-#include "Data/sr_project.hpp"  // ProjectPtr
+#include "Data/bf_property.hpp"  // IPropChangeHandler
+#include "Data/sr_project.hpp"   // ProjectPtr
 
 #include "ui_mainwindow.h"
 
 #include <QProgressBar>
+
+struct OnTimelineChange : public bf::IPropChangeListener<int>
+{
+  QSlider* slider;
+
+  OnTimelineChange() :
+    bf::IPropChangeListener<int>([](bf::IPropChangeListener<int>* self, const int& /* old_val */, const int& new_val) {
+      OnTimelineChange* handler = (OnTimelineChange*)self;
+      handler->slider->setValue(new_val);
+    })
+  {
+  }
+};
 
 // clang-format off
 class MainWindow : public QMainWindow, private Ui::MainWindow
@@ -19,9 +33,10 @@ class MainWindow : public QMainWindow, private Ui::MainWindow
   Q_OBJECT
 
  private:
-  QString      m_BaseTitle;
-  ProjectPtr   m_OpenProject;
-  QProgressBar m_PacketSendingProgress;
+  QString          m_BaseTitle;
+  ProjectPtr       m_OpenProject;
+  QProgressBar     m_PacketSendingProgress;
+  OnTimelineChange m_OnTimelineChange;
 
  public:
   explicit MainWindow(const QString& name, QWidget* parent = 0);

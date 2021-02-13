@@ -8,9 +8,9 @@
 
 #include "sr_project.hpp"
 
-#include "Data/sr_settings.hpp"     // Settings
-#include "UI/sr_image_library.hpp"  // ImageLibrary
-#include "main.hpp"                   // g_Server
+#include "Data/sr_settings.hpp"              // Settings
+#include "Server/sr_live_reload_server.hpp"  // g_Server
+#include "UI/sr_image_library.hpp"           // ImageLibrary
 #include "sr_main_window.hpp"
 
 #include <QDebug>
@@ -629,11 +629,6 @@ void Project::regenerateAtlasExport()
         image_rects.emplace_back(image_drawn_x, image_drawn_y, image_drawn_w, image_drawn_h);
 
         const QRect frame_rect = QRect(image_drawn_x + offset_x, image_drawn_y + offset_y, scaled_image.width(), scaled_image.height());
-
-#if 0
-          qDebug() << "frame_rects[" << frame_rects.size() << "] = " << frame_rect;
-          qDebug() << "target_rect = " << target_rect;
-#endif
 
         frame_rects.emplace_back(frame_rect);
 

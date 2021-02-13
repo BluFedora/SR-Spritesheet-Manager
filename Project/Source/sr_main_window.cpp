@@ -6,10 +6,10 @@
 #include "sr_main_window.hpp"
 
 #include "Data/sr_settings.hpp"
-#include "UI/sr_welcome_window.hpp"
 #include "UI/sr_timeline.hpp"
+#include "UI/sr_welcome_window.hpp"
 
-#include "main.hpp"
+#include "Server/sr_live_reload_server.hpp"  // g_Server
 #include "sr_new_animation_dialog.hpp"
 
 #include <QCloseEvent>
@@ -21,7 +21,8 @@ MainWindow::MainWindow(const QString& name, QWidget* parent) :
   QMainWindow(parent),
   m_BaseTitle{},
   m_OpenProject{std::make_unique<Project>(this, name)},
-  m_PacketSendingProgress{this}
+  m_PacketSendingProgress{this},
+  m_OnTimelineChange{}
 {
   setupUi(this);
 
@@ -37,6 +38,8 @@ MainWindow::MainWindow(const QString& name, QWidget* parent) :
   m_OpenProject->setup(m_ImageLibrary);
   m_TimelineFrames->setup(m_Timeline);
 
+  m_OnTimelineChange.slider = m_TimelineFrameSizeSlider;
+
   QObject::connect(m_TimelineFrameSizeSlider, &QSlider::valueChanged, m_TimelineFrames, &Timeline::onFrameSizeChanged);
   QObject::connect(m_TimelineFpsSpinbox, &QSpinBox::valueChanged, m_OpenProject.get(), &Project::onTimelineFpsChange);
   QObject::connect(m_OpenProject.get(), &Project::atlasModified, m_TimelineFrames, &Timeline::onAtlasUpdated);
@@ -51,6 +54,8 @@ MainWindow::MainWindow(const QString& name, QWidget* parent) :
   QObject::connect(m_OpenProject.get(), &Project::renamed, this, &MainWindow::onProjectRenamed);
   QObject::connect(m_AnimationList, &QListView::customContextMenuRequested, this, &MainWindow::onAnimationRightClick);
   QObject::connect(m_AnimationList->selectionModel(), &QItemSelectionModel::currentRowChanged, this, &MainWindow::onAnimationSelectionChanged);
+
+  m_TimelineFrames->frameHeight().addListener(&m_OnTimelineChange);
 
   auto& undo_stack = m_OpenProject->historyStack();
 

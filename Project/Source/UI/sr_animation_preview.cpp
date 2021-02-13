@@ -339,7 +339,7 @@ void AnimationPreview::mainUpdateLoop()
     bfAnimation2D_beginFrame(m_AnimCtx);
     bfAnimation2D_stepFrame(m_AnimCtx, k_DeltaTime);
 
-    if (!bfAnim2DSprite_isInvalidHandle(&m_SpriteHandle))
+    if (!bfAnim2DSprite_isInvalidHandle(m_SpriteHandle))
     {
     }
   }

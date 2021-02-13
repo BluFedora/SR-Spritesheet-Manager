@@ -31,11 +31,6 @@ struct AnimationFrameInstance final
 
   QString full_path() const;
 
-  void setFrameTime(float value)
-  {
-    frame_time = value;
-  }
-
   friend bool operator==(const AnimationFrameInstance& lhs, const AnimationFrameInstance& rhs)
   {
     return lhs.source == rhs.source && lhs.frame_time == rhs.frame_time;
@@ -71,7 +66,5 @@ struct Animation final : public QStandardItem
   void notifyPreviewFrameChanged();
   void notifyChanged();
 };
-
-// using AnimationPtr = std::unique_ptr<Animation>;
 
 #endif  // SRSM_ANIMATION_HPP

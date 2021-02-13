@@ -219,7 +219,7 @@ Timeline::~Timeline()
 
 void Timeline::onFrameSizeChanged(int new_value)
 {
-  m_FrameHeight = new_value;
+  m_FrameHeight.set(new_value, false);
   recalculateTimelineSize();
 }
 
@@ -413,7 +413,7 @@ void Timeline::paintEvent(QPaintEvent* event)
 
   // Draw Frame Track
 
-  const int   frame_track_height = qMin(m_FrameHeight, background_rect.height() - k_FrameTrackPadding * 2);
+  const int   frame_track_height = qMin(m_FrameHeight.get(), background_rect.height() - k_FrameTrackPadding * 2);
   const QRect track_rect         = QRect(background_rect.x(), background_rect.y() + (background_rect.height() - frame_track_height) / 2, background_rect.width(), frame_track_height);
   QRect       track_rect_outline = track_rect;
 
@@ -640,8 +640,6 @@ void Timeline::wheelEvent(QWheelEvent* event)
   if (key_mods & Qt::ControlModifier)
   {
     m_FrameHeight = std::clamp(m_FrameHeight + num_steps.y(), k_DblFramePadding * 2, 400);
-
-    recalculateTimelineSize();
   }
   else
   {
@@ -841,7 +839,7 @@ void Timeline::mouseReleaseEvent(QMouseEvent* event)
 
         selection_remap[-1] = -1;
 
-        const auto addBox = [&](int real_index) {
+        const auto addBox = [this, &new_frames](int& count, int real_index) {
           const auto& frame_info = m_DesiredFrameInfos[real_index];
 
           new_frames.emplace_back(frame_info.frame_src->shared_from_this(), frame_info.frame_time);
@@ -853,14 +851,14 @@ void Timeline::mouseReleaseEvent(QMouseEvent* event)
         {
           if (!m_Selection.isSelected(i))
           {
-            addBox(i);
+            addBox(count, i);
             drawn_boxes.insert(i);
           }
         }
 
         m_Selection.forEachSelectedItem([&addBox, &drawn_boxes, &selection_remap, &count](int i) {
           selection_remap[i] = count;
-          addBox(i);
+          addBox(count, i);
           drawn_boxes.insert(i);
         });
 
@@ -868,7 +866,7 @@ void Timeline::mouseReleaseEvent(QMouseEvent* event)
         {
           if (!m_Selection.isSelected(i) && drawn_boxes.find(i) == drawn_boxes.end())
           {
-            addBox(i);
+            addBox(count, i);
           }
         }
 
@@ -920,7 +918,7 @@ void Timeline::mouseReleaseEvent(QMouseEvent* event)
          UndoActionFlag_ModifiedAnimation,
          [this]() {
            m_Selection.forEachSelectedItem([this](int item) {
-             m_CurrentAnimation->frameAt(item)->setFrameTime(m_DesiredFrameInfos[item].frame_time);
+             m_CurrentAnimation->frameAt(item)->frame_time = m_DesiredFrameInfos[item].frame_time;
            });
          });
       }
@@ -1098,7 +1096,7 @@ void Timeline::recalculateTimelineSize(bool new_anim)
   if (m_CurrentAnimation)
   {
     const QRect background_rect    = rect();
-    const int   frame_track_height = qMin(m_FrameHeight, background_rect.height() - k_FrameTrackPadding * 2);
+    const int   frame_track_height = qMin(m_FrameHeight.get(), background_rect.height() - k_FrameTrackPadding * 2);
     const QRect track_rect         = QRect(background_rect.x(), background_rect.y() + (background_rect.height() - frame_track_height) / 2, background_rect.width(), frame_track_height);
     const int   num_frames         = numFrames();
     const int   frame_top          = track_rect.top() + k_FramePadding;
@@ -1163,7 +1161,7 @@ void Timeline::calculateDesiredLayout(bool use_selected_items)
   if (!m_CurrentAnimation) { return; }
 
   const QRect background_rect    = rect();
-  const int   frame_track_height = qMin(m_FrameHeight, background_rect.height() - k_FrameTrackPadding * 2);
+  const int   frame_track_height = qMin(m_FrameHeight.get(), background_rect.height() - k_FrameTrackPadding * 2);
   const QRect track_rect         = QRect(background_rect.x(), background_rect.y() + (background_rect.height() - frame_track_height) / 2, background_rect.width(), frame_track_height);
   const int   num_frames         = numFrames();
   const int   frame_top          = track_rect.top() + k_FramePadding;
@@ -1336,7 +1334,7 @@ FrameInfoAtPoint Timeline::infoAt(const QPoint& local_mouse_pos, bool allow_acti
 FrameInfoAtPoint Timeline::dropInfoAt(const QPoint& local_mouse_pos)
 {
   const QRect      background_rect    = rect();
-  const int        frame_track_height = qMin(m_FrameHeight, background_rect.height() - k_FrameTrackPadding * 2);
+  const int        frame_track_height = qMin(m_FrameHeight.get(), background_rect.height() - k_FrameTrackPadding * 2);
   const QRect      track_rect         = QRect(background_rect.x(), background_rect.y() + (background_rect.height() - frame_track_height) / 2, background_rect.width(), frame_track_height);
   const int        num_frames         = numFrames();
   const int        frame_top          = track_rect.top() + k_FramePadding;
