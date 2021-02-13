@@ -93,57 +93,57 @@ namespace bf
   template<typename T>
   struct base_property
   {
-    IPropChangeListener<T>* change_Listeners = nullptr;
+    IPropChangeListener<T>* change_listeners = nullptr;
 
-    void addListener(IPropChangeListener<T>* Listener)
+    void addListener(IPropChangeListener<T>* listener)
     {
-      if (Listener->prop)
+      if (listener->prop)
       {
-        Listener->prop->removeListener(Listener);
+        listener->prop->removeListener(listener);
       }
 
-      Listener->prop = this;
-      Listener->prev = nullptr;
-      Listener->next = change_Listeners;
+      listener->prop = this;
+      listener->prev = nullptr;
+      listener->next = change_listeners;
 
-      if (change_Listeners)
+      if (change_listeners)
       {
-        change_Listeners->prev = Listener;
+        change_listeners->prev = listener;
       }
 
-      change_Listeners = Listener;
+      change_listeners = listener;
     }
 
-    void removeListener(IPropChangeListener<T>* Listener)
+    void removeListener(IPropChangeListener<T>* listener)
     {
-      if (Listener->prop == this)
+      if (listener->prop == this)
       {
-        Listener->prop = nullptr;
+        listener->prop = nullptr;
 
-        IPropChangeListener<T>* const Listener_prev = Listener->prev;
-        IPropChangeListener<T>* const Listener_next = Listener->next;
+        IPropChangeListener<T>* const listener_prev = listener->prev;
+        IPropChangeListener<T>* const listener_next = listener->next;
 
-        if (Listener_prev)
+        if (listener_prev)
         {
-          Listener_prev->next = Listener_next;
+          listener_prev->next = listener_next;
         }
         else
         {
-          change_Listeners = Listener_next;
+          change_listeners = listener_next;
         }
 
-        if (Listener_next)
+        if (listener_next)
         {
-          Listener_next->prev = Listener_prev;
+          listener_next->prev = listener_prev;
         }
       }
     }
 
     void removeAllListeners()
     {
-      while (change_Listeners)
+      while (change_listeners)
       {
-        removeListener(change_Listeners);
+        removeListener(change_listeners);
       }
     }
   };
@@ -182,8 +182,8 @@ namespace bf
 
     void set(const T& new_value, bool notify = true)
     {
-      // We only need to make a copy of the old value if there are change Listeners.
-      if (this->change_Listeners && notify)
+      // We only need to make a copy of the old value if there are change listeners.
+      if (this->change_listeners && notify)
       {
         const T& old_value = get();
         storage.set(new_value);
@@ -197,13 +197,13 @@ namespace bf
 
     void notifyChange(const T& old_value, const T& new_value) const
     {
-      IPropChangeListener<T>* Listener = this->change_Listeners;
+      IPropChangeListener<T>* listener = this->change_listeners;
 
-      while (Listener)
+      while (listener)
       {
-        IPropChangeListener<T>* const next = Listener->next;
-        Listener->onValueAssigned(Listener, old_value, new_value);
-        Listener = next;
+        IPropChangeListener<T>* const next = listener->next;
+        listener->onValueAssigned(listener, old_value, new_value);
+        listener = next;
       }
     }
   };
