@@ -79,7 +79,7 @@ void Project::selectAnimation(int index)
 
     m_UI.timelineFpsSpinbox().setEnabled(animation);
 
-    emit animationSelected(animation);
+    emit animationSelected(animation, index);
   }
 }
 

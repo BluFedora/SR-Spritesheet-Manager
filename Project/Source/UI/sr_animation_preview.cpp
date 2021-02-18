@@ -3,7 +3,7 @@
 //
 // file:   sr_animation_preview.cpp
 // author: Shareef Abdoul-Raheem
-// Copyright (c) 2020 Shareef Abdoul-Raheem
+// Copyright (c) 2020-2021 Shareef Abdoul-Raheem
 //
 
 #include "sr_animation_preview.hpp"
@@ -24,6 +24,7 @@
 static constexpr qreal k_ScaleFactor     = 1.1;
 static constexpr qreal k_InvScaleFactor  = 1.0 / k_ScaleFactor;
 static constexpr qreal k_FitInViewGutter = 50.0f;
+static const float     k_DeltaTime       = 1.0f / 60.0f;
 
 AnimationPreview::AnimationPreview(QWidget* parent) :
   QGraphicsView(parent),
@@ -35,9 +36,9 @@ AnimationPreview::AnimationPreview(QWidget* parent) :
   m_NoAnimFramesPixmap{":/Res/Images/Runtime/no-frames-in-animation.png"},
   m_SceneDocImage{":/Res/Images/Runtime/scene_docs.png"},
   m_CurrentAnim{nullptr},
+  m_CurrentAnimIndex{-1},
   m_AnimCtx{nullptr},
-  m_Anim2DScene{nullptr},
-  m_SpriteHandle{bfAnim2DSprite_invalidHandle()},
+  m_Spritesheet{nullptr},
   m_AnimNewlySelected{false},
   m_IsPlayingAnimation{false},
   ui(new Ui::AnimationPreview)
@@ -50,9 +51,7 @@ AnimationPreview::AnimationPreview(QWidget* parent) :
 
   const bfAnim2DCreateParams create_anim_ctx = {nullptr, nullptr, nullptr};
 
-  m_AnimCtx = bfAnimation2D_new(&create_anim_ctx);
-
-  m_Anim2DScene = bfAnimation2D_createScene(m_AnimCtx);
+  m_AnimCtx = bfAnim2D_new(&create_anim_ctx);
 
   // Setup OpenGL Rendering
 
@@ -98,8 +97,7 @@ AnimationPreview::AnimationPreview(QWidget* parent) :
 
 AnimationPreview::~AnimationPreview()
 {
-  bfAnimation2D_destroyScene(m_AnimCtx, m_Anim2DScene);
-  bfAnimation2D_delete(m_AnimCtx);
+  bfAnim2D_delete(m_AnimCtx);
   setScene(nullptr);
   delete ui;
 }
@@ -241,8 +239,9 @@ void AnimationPreview::drawForeground(QPainter* painter, const QRectF& rect)
   }
 }
 
-void AnimationPreview::onAnimationSelected(Animation* anim)
+void AnimationPreview::onAnimationSelected(Animation* anim, int index)
 {
+  m_CurrentAnimIndex  = index;
   m_AnimNewlySelected = m_CurrentAnim != anim;
   m_CurrentAnim       = anim;
 
@@ -263,7 +262,15 @@ void AnimationPreview::onAnimationSelected(Animation* anim)
 
 void AnimationPreview::onAtlasUpdated(AtlasExport& atlas)
 {
-  m_Atlas = &atlas;
+  if (m_Spritesheet)
+  {
+    bfAnim2D_destroySpritesheet(m_AnimCtx, m_Spritesheet);
+  }
+
+  auto& atlas_buffer = atlas.atlas_data->buffer();
+
+  m_Spritesheet = bfAnim2D_loadSpritesheet(m_AnimCtx, bfStringSpan{"__INTERNAL__", 12}, (const uint8_t*)atlas_buffer.data(), atlas_buffer.size());
+  m_Atlas       = &atlas;
 
   if (m_CurrentAnim)
   {
@@ -332,33 +339,38 @@ void AnimationPreview::fitSpriteOneToOne()
 
 void AnimationPreview::mainUpdateLoop()
 {
-  static const float k_DeltaTime = 1.0f / 60.0f;
-
-  if (m_IsPlayingAnimation)
+  if (m_Spritesheet && m_IsPlayingAnimation && m_CurrentAnim && m_CurrentAnim->numFrames() != 0)
   {
-    bfAnimation2D_beginFrame(m_AnimCtx);
-    bfAnimation2D_stepFrame(m_AnimCtx, k_DeltaTime);
+    // Timing Conversions:
+    //   TimeLeftForFrame = FrameTime - PreviewedTime
+    //   FrameTime        = TimeLeftForFrame + PreviewedTime
+    //   PreviewedTime    = FrameTime - TimeLeftForFrame
+    //
+    // PreviewedTime    goes from 0.0f => FrameTime.
+    // TimeLeftForFrame goes from FrameTime -> 0.0f
 
-    if (!bfAnim2DSprite_isInvalidHandle(m_SpriteHandle))
+    const int current_frame = m_CurrentAnim->previewed_frame;
+
+    bfAnim2DUpdateInput anim_input;
+    anim_input.playback_speed      = 1.0f;
+    anim_input.time_left_for_frame = m_CurrentAnim->frameAt(current_frame)->frame_time - m_CurrentAnim->previewed_frame_time;
+    anim_input.animation           = m_CurrentAnimIndex;
+    anim_input.spritesheet_idx     = 0;
+    anim_input.current_frame       = current_frame;
+    anim_input.is_looping          = true;
+
+    const bfSpritesheet* spritesheet = m_Spritesheet;
+
+    bfAnim2DUpdateOutput anim_output;
+
+    bfAnim2D_stepFrame(&anim_input, &spritesheet, 1, k_DeltaTime, &anim_output);
+
+    m_CurrentAnim->previewed_frame      = anim_output.current_frame;
+    m_CurrentAnim->previewed_frame_time = (m_CurrentAnim->frameAt(anim_output.current_frame)->frame_time - anim_output.time_left_for_frame);
+
+    if (anim_input.current_frame != anim_output.current_frame)
     {
-    }
-  }
-
-  if (int num_frames; m_IsPlayingAnimation && m_CurrentAnim && (num_frames = m_CurrentAnim->numFrames()) > 0)
-  {
-    float& time = m_CurrentAnim->previewed_frame_time;
-
-    if (time >= m_CurrentAnim->frameAt(m_CurrentAnim->previewed_frame)->frame_time)
-    {
-      m_CurrentAnim->previewed_frame = (m_CurrentAnim->previewed_frame + 1) % num_frames;
-
       onFrameSelected(m_CurrentAnim);
-
-      time = 0.0f;
-    }
-    else
-    {
-      time += k_DeltaTime;
     }
   }
 }

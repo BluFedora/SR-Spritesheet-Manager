@@ -3,7 +3,7 @@
 //
 // file:   sr_animation_preview.hpp
 // author: Shareef Abdoul-Raheem
-// Copyright (c) 2020 Shareef Abdoul-Raheem
+// Copyright (c) 2020-2021 Shareef Abdoul-Raheem
 //
 
 #ifndef SR_ANIMATION_PREVIEW_HPP
@@ -37,9 +37,9 @@ class AnimationPreview : public QGraphicsView
   QPixmap               m_NoAnimFramesPixmap;
   QPixmap               m_SceneDocImage;
   Animation*            m_CurrentAnim;
-  bfAnimation2DCtx*     m_AnimCtx;
-  bfAnim2DScene*        m_Anim2DScene;
-  bfAnim2DSpriteHandle  m_SpriteHandle;
+  int                   m_CurrentAnimIndex;
+  bfAnim2DCtx*          m_AnimCtx;
+  bfSpritesheet*        m_Spritesheet;
   bool                  m_AnimNewlySelected;
   bool                  m_IsPlayingAnimation;
   Ui::AnimationPreview* ui;
@@ -52,7 +52,7 @@ class AnimationPreview : public QGraphicsView
   ~AnimationPreview();
 
  public slots:
-  void onAnimationSelected(Animation* anim);
+  void onAnimationSelected(Animation* anim, int index);
   void onAtlasUpdated(AtlasExport& atlas);
   void onFrameSelected(Animation* anim);
   void onTogglePlayAnimation(void);

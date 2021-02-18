@@ -9,6 +9,7 @@
 #ifndef SRSM_PROJECT_HPP
 #define SRSM_PROJECT_HPP
 
+#include "bf/Animation2D.h"  // bfSpritesheet
 #include "sr_animation.hpp"  // Animation
 
 #include <QBuffer>      // QBuffer
@@ -120,7 +121,7 @@ class Project final : public QObject
 
  signals:
   void animationChanged(Animation* anim);
-  void animationSelected(Animation* anim);
+  void animationSelected(Animation* anim, int index);
   void atlasModified(AtlasExport& atlas);
   void renamed(const QString& name);
   void signalPreviewFrameSelected(Animation* anim);
