@@ -49,7 +49,7 @@ AnimationPreview::AnimationPreview(QWidget* parent) :
 
   // Setup The Animation Context
 
-  const bfAnim2DCreateParams create_anim_ctx = {nullptr, nullptr, nullptr};
+  const bfAnim2DCreateParams create_anim_ctx = {nullptr, nullptr};
 
   m_AnimCtx = bfAnim2D_new(&create_anim_ctx);
 
@@ -351,7 +351,7 @@ void AnimationPreview::mainUpdateLoop()
 
     const int current_frame = m_CurrentAnim->previewed_frame;
 
-    bfAnim2DUpdateInput anim_input;
+    bfAnim2DUpdateInfo anim_input;
     anim_input.playback_speed      = 1.0f;
     anim_input.time_left_for_frame = m_CurrentAnim->frameAt(current_frame)->frame_time - m_CurrentAnim->previewed_frame_time;
     anim_input.animation           = m_CurrentAnimIndex;
@@ -359,16 +359,16 @@ void AnimationPreview::mainUpdateLoop()
     anim_input.current_frame       = current_frame;
     anim_input.is_looping          = true;
 
+    const std::uint32_t old_frame = anim_input.current_frame;
+
     const bfSpritesheet* spritesheet = m_Spritesheet;
 
-    bfAnim2DUpdateOutput anim_output;
+    bfAnim2D_stepFrame(&anim_input, &spritesheet, 1, k_DeltaTime);
 
-    bfAnim2D_stepFrame(&anim_input, &spritesheet, 1, k_DeltaTime, &anim_output);
+    m_CurrentAnim->previewed_frame      = anim_input.current_frame;
+    m_CurrentAnim->previewed_frame_time = (m_CurrentAnim->frameAt(anim_input.current_frame)->frame_time - anim_input.time_left_for_frame);
 
-    m_CurrentAnim->previewed_frame      = anim_output.current_frame;
-    m_CurrentAnim->previewed_frame_time = (m_CurrentAnim->frameAt(anim_output.current_frame)->frame_time - anim_output.time_left_for_frame);
-
-    if (anim_input.current_frame != anim_output.current_frame)
+    if (old_frame != anim_input.current_frame)
     {
       onFrameSelected(m_CurrentAnim);
     }
