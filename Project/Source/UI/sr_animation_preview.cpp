@@ -359,8 +359,7 @@ void AnimationPreview::mainUpdateLoop()
     anim_input.current_frame       = current_frame;
     anim_input.is_looping          = true;
 
-    const std::uint32_t old_frame = anim_input.current_frame;
-
+    const std::uint32_t  old_frame   = anim_input.current_frame;
     const bfSpritesheet* spritesheet = m_Spritesheet;
 
     bfAnim2D_stepFrame(&anim_input, &spritesheet, 1, k_DeltaTime);
