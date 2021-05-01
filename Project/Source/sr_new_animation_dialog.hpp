@@ -9,7 +9,7 @@
 #ifndef NEWANIMATION_HPP
 #define NEWANIMATION_HPP
 
-#include "ui_newanimation.h"
+#include "ui_sr_new_animation_dialog.h"
 
 // clang-format off
 class NewAnimation : public QDialog, private Ui::NewAnimation

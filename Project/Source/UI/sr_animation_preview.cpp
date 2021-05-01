@@ -8,7 +8,7 @@
 
 #include "sr_animation_preview.hpp"
 
-#include "ui_srsm_animation_preview.h"
+#include "ui_sr_animation_preview.h"
 
 #include "Data/sr_animation.hpp"
 #include "Data/sr_project.hpp"

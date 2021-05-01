@@ -166,7 +166,7 @@ namespace bf
 
     ~property()
     {
-      removeAllListeners();
+      this->removeAllListeners();
     }
 
     operator T() const { return get(); }

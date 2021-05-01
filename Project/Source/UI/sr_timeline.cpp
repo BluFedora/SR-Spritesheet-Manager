@@ -8,7 +8,7 @@
 
 #include "sr_timeline.hpp"
 
-#include "ui_srsm_timeline.h"
+#include "ui_sr_timeline.h"
 
 #include "Data/sr_project.hpp"
 #include "UI/sr_image_library.hpp"

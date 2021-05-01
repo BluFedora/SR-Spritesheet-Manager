@@ -255,7 +255,7 @@
      <x>0</x>
      <y>0</y>
      <width>1280</width>
-     <height>22</height>
+     <height>23</height>
     </rect>
    </property>
    <property name="font">
@@ -513,7 +513,7 @@
               <x>0</x>
               <y>0</y>
               <width>1268</width>
-              <height>68</height>
+              <height>69</height>
              </rect>
             </property>
             <property name="sizePolicy">
@@ -826,12 +826,12 @@
   <customwidget>
    <class>AnimationPreview</class>
    <extends>QGraphicsView</extends>
-   <header>UI/srsm_animation_preview.hpp</header>
+   <header>UI/sr_animation_preview.hpp</header>
   </customwidget>
   <customwidget>
    <class>ImageLibrary</class>
    <extends>QTreeWidget</extends>
-   <header>UI/srsm_image_library.hpp</header>
+   <header>UI/sr_image_library.hpp</header>
    <slots>
     <slot>onImportImages()</slot>
     <slot>removeSelectedItems()</slot>
@@ -840,7 +840,7 @@
   <customwidget>
    <class>Timeline</class>
    <extends>QWidget</extends>
-   <header>UI/srsm_timeline.hpp</header>
+   <header>UI/sr_timeline.hpp</header>
    <container>1</container>
    <slots>
     <slot>onFrameSizeSet(int)</slot>

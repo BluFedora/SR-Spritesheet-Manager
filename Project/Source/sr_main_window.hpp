@@ -9,7 +9,7 @@
 #include "Data/bf_property.hpp"  // IPropChangeHandler
 #include "Data/sr_project.hpp"   // ProjectPtr
 
-#include "ui_mainwindow.h"
+#include "ui_sr_main_window.h"
 
 #include <QProgressBar>
 
