@@ -16,6 +16,7 @@
 #include <QMessageBox>      // QMessageBox
 #include <QSharedMemory  >  // QSharedMemory
 #include <QStyleFactory>    // QStyleFactory
+#include <QMetaType> // qRegisterMetaTypeStreamOperators
 
 /*!
  * @brief main
@@ -32,8 +33,6 @@
  */
 int main(int argc, char *argv[])
 {
-  qRegisterMetaTypeStreamOperators<std::shared_ptr<AnimationFrameSource>>("std::shared_ptr<AnimationFrameSource>");
-
   // If this was a command line app then only 'QCoreApplication'
   // would be needed rather than 'QApplication'.
 

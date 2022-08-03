@@ -46,6 +46,7 @@ MainWindow::MainWindow(const QString& name, QWidget* parent) :
   QObject::connect(m_OpenProject.get(), &Project::atlasModified, m_GfxPreview, &AnimationPreview::onAtlasUpdated);
   QObject::connect(m_OpenProject.get(), &Project::animationChanged, m_TimelineFrames, &Timeline::onAnimationChanged);
   QObject::connect(m_OpenProject.get(), &Project::animationChanged, this, &MainWindow::onAnimChanged);
+  QObject::connect(m_OpenProject.get(), &Project::animationChanged, m_GfxPreview, &AnimationPreview::onAnimationChanged);
   QObject::connect(m_OpenProject.get(), &Project::animationSelected, m_TimelineFrames, &Timeline::onAnimationSelected);
   QObject::connect(m_OpenProject.get(), &Project::animationSelected, m_GfxPreview, &AnimationPreview::onAnimationSelected);
   QObject::connect(m_OpenProject.get(), &Project::signalPreviewFrameSelected, m_GfxPreview, &AnimationPreview::onFrameSelected);

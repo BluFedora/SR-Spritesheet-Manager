@@ -58,7 +58,7 @@ class ImageLibrary : public QTreeWidget
  public:
   ImageLibrary(QWidget* parent);
 
-  int                     numImages() const { return m_AbsToFrameSrc.uniqueKeys().size(); }
+  int                     numImages() const { return m_AbsToFrameSrc.keys().size(); }
   const QVector<QString>& loadedImageList() const { return m_LoadedImagesIndices; }
 
   QJsonObject             serialize(Project& project);
@@ -76,6 +76,8 @@ class ImageLibrary : public QTreeWidget
  private slots:
   void onCustomCtxMenu(const QPoint& pos);
   void onFileWatcherDirOrFile(const QString& path);
+
+ public slots:
   bool removeSelectedItems();
 
   // QWidget interface

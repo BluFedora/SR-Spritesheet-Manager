@@ -124,7 +124,7 @@ void AnimationPreview::dropEvent(QDropEvent* event)
   if (event->mimeData()->hasFormat(k_MimeFormat))
   {
     QObject* const   evt_source = event->source();
-    QListView* const item_model = dynamic_cast<QListView*>(evt_source);
+    QListView* const item_model = static_cast<QListView*>(evt_source);
 
     if (!item_model)
     {
@@ -141,7 +141,7 @@ void AnimationPreview::dropEvent(QDropEvent* event)
 
       stream >> row >> col >> roleDataMap;
 
-      Animation* const anim = dynamic_cast<Animation*>(static_cast<QStandardItemModel*>(item_model->model())->item(row, col));
+      Animation* const anim = static_cast<Animation*>(static_cast<QStandardItemModel*>(item_model->model())->item(row, col));
 
       if (anim)
       {
@@ -163,7 +163,7 @@ void AnimationPreview::wheelEvent(QWheelEvent* event)
     //   This doesn't handle event->pixelData() correctly yet
     //   so it won't work nicely with multitouch trackpads.
 
-    const qreal scale_factor = event->delta() > 0 ? k_ScaleFactor : k_InvScaleFactor;
+    const qreal scale_factor = event->angleDelta().y() > 0 ? k_ScaleFactor : k_InvScaleFactor;
 
     scale(scale_factor, scale_factor);
 
@@ -260,6 +260,14 @@ void AnimationPreview::onAnimationSelected(Animation* anim, int index)
   }
 }
 
+void AnimationPreview::onAnimationChanged(Animation* anim)
+{
+  if (m_Atlas && anim)
+  {
+    onAtlasUpdated(*m_Atlas);
+  }
+}
+
 void AnimationPreview::onAtlasUpdated(AtlasExport& atlas)
 {
   if (m_Spritesheet)
@@ -349,25 +357,25 @@ void AnimationPreview::mainUpdateLoop()
     // PreviewedTime    goes from 0.0f => FrameTime.
     // TimeLeftForFrame goes from FrameTime -> 0.0f
 
-    const int current_frame = m_CurrentAnim->previewed_frame;
+    const int   current_frame      = m_CurrentAnim->previewed_frame;
+    const float current_frame_time = m_CurrentAnim->frameAt(current_frame)->frame_time;
 
     bfAnim2DUpdateInfo anim_input;
     anim_input.playback_speed      = 1.0f;
-    anim_input.time_left_for_frame = m_CurrentAnim->frameAt(current_frame)->frame_time - m_CurrentAnim->previewed_frame_time;
+    anim_input.time_left_for_frame = current_frame_time - m_CurrentAnim->previewed_frame_time;
     anim_input.animation           = m_CurrentAnimIndex;
     anim_input.spritesheet_idx     = 0;
     anim_input.current_frame       = current_frame;
     anim_input.is_looping          = true;
 
-    const std::uint32_t  old_frame   = anim_input.current_frame;
     const bfSpritesheet* spritesheet = m_Spritesheet;
 
     bfAnim2D_stepFrame(&anim_input, &spritesheet, 1, k_DeltaTime);
 
     m_CurrentAnim->previewed_frame      = anim_input.current_frame;
-    m_CurrentAnim->previewed_frame_time = (m_CurrentAnim->frameAt(anim_input.current_frame)->frame_time - anim_input.time_left_for_frame);
+    m_CurrentAnim->previewed_frame_time = m_CurrentAnim->frameAt(anim_input.current_frame)->frame_time - anim_input.time_left_for_frame;
 
-    if (old_frame != anim_input.current_frame)
+    if (std::uint32_t(current_frame) != anim_input.current_frame)
     {
       onFrameSelected(m_CurrentAnim);
     }

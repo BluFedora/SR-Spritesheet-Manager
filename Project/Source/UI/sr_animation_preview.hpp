@@ -53,6 +53,7 @@ class AnimationPreview : public QGraphicsView
 
  public slots:
   void onAnimationSelected(Animation* anim, int index);
+  void onAnimationChanged(Animation* anim);
   void onAtlasUpdated(AtlasExport& atlas);
   void onFrameSelected(Animation* anim);
   void onTogglePlayAnimation(void);

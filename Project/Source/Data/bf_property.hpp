@@ -2,14 +2,13 @@
 /*!
  * @file   bf_property.hpp
  * @author Shareef Abdoul-Raheem (https://blufedora.github.io/)
+ * @date   2021-02-13
  * @brief
  *   Simple system for managing callbacks for changing data members.
  *   This is meant to be light-weight with not strong opinions on memory
  *   allocation strategy.
  *
- * @date      2021-02-13
- *
- * @copyright Copyright Shareef Abdoul-Raheem (c) 2021
+ * @copyright Copyright Shareef Abdoul-Raheem (c) 2021-2022
  */
 /******************************************************************************/
 #ifndef BF_PROPERTY_HPP
