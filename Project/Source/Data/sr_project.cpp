@@ -668,7 +668,7 @@ void Project::regenerateAtlasExport()
       const QString    guid_str  = m_EditUUID.toString(QUuid::WithoutBraces);
       const QByteArray guid_cstr = guid_str.toLocal8Bit();
 
-      g_Server->sendTextureChangedPacket(guid_cstr.data(), m_Export.image);
+      g_Server->sendAtlasTextureChanged(m_EditUUID, m_Export.image);
     }
 
     // An atlas regen implies an animation regen
@@ -754,12 +754,9 @@ void Project::regenerateAnimationExport()
      dst_uv_frame->max.y = float32(y + 1.0f) / float32(m_Export.image.height());
    });
 
-  if (g_Server)
+  if (g_Server && m_SelectedAnimation != -1)
   {
-    // const QString    guid_str  = m_EditUUID.toString(QUuid::WithoutBraces);
-    // const QByteArray guid_cstr = guid_str.toLocal8Bit();
-
-    //  g_Server->sendAnimChangedPacket(guid_cstr.data(), QBuffer());
+    g_Server->sendAnimationFramesChanged(m_EditUUID, *animationAt(m_SelectedAnimation), m_Export.frame_to_index);
   }
 
   notifyAnimationChanged(m_SelectedAnimation != -1 ? animationAt(m_SelectedAnimation) : nullptr);
