@@ -1,7 +1,7 @@
 #ifndef LIVERELOADSERVER_HPP
 #define LIVERELOADSERVER_HPP
 
-#include "bf/Animation2D.h"  // k_bfSRSMServerPort
+#include "sprite_anim/bf_sprite_animation.hpp" // k_ServerPort
 
 #include <QBuffer>     // QBuffer
 #include <QImage>      // QImage
@@ -24,7 +24,7 @@ class LiveReloadServer final : public QObject
 
   qint64 numBytesNeedSend() const { return m_NumBytesNeedSend; }
   qint64 numBytesSent() const { return m_NumBytesSent; }
-  bool   startServer() { return m_Server.listen(QHostAddress::LocalHost, k_bfSRSMServerPort); }
+  bool   startServer() { return m_Server.listen(QHostAddress::LocalHost, SpriteAnim::k_ServerPort); }
 
   void setup();
   void sendTextureChangedPacket(const char *guid, const QImage &atlas_image);

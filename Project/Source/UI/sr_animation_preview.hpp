@@ -11,7 +11,9 @@
 
 #include "sr_animated_sprite.hpp"  // AnimatedSprite
 
-#include "bf/Animation2D.h"
+// #include "bf/Animation2D.h"
+
+#include "sprite_anim/bf_sprite_animation.hpp"
 
 #include <QGraphicsView>
 #include <QTimer>
@@ -29,20 +31,19 @@ class AnimationPreview : public QGraphicsView
   Q_OBJECT
 
  private:
-  AtlasExport*          m_Atlas;
-  QGraphicsScene        m_Scene;
-  QTimer                m_UpdateLoop;
-  AnimatedSprite*       m_Sprite;
-  QPixmap               m_NoSelectedAnimPixmap;
-  QPixmap               m_NoAnimFramesPixmap;
-  QPixmap               m_SceneDocImage;
-  Animation*            m_CurrentAnim;
-  int                   m_CurrentAnimIndex;
-  bfAnim2DCtx*          m_AnimCtx;
-  bfSpritesheet*        m_Spritesheet;
-  bool                  m_AnimNewlySelected;
-  bool                  m_IsPlayingAnimation;
-  Ui::AnimationPreview* ui;
+  AtlasExport*             m_Atlas;
+  QGraphicsScene           m_Scene;
+  QTimer                   m_UpdateLoop;
+  AnimatedSprite*          m_Sprite;
+  QPixmap                  m_NoSelectedAnimPixmap;
+  QPixmap                  m_NoAnimFramesPixmap;
+  QPixmap                  m_SceneDocImage;
+  Animation*               m_CurrentAnim;
+  int                      m_CurrentAnimIndex;
+  SpriteAnim::Spritesheet* m_Spritesheet;
+  bool                     m_AnimNewlySelected;
+  bool                     m_IsPlayingAnimation;
+  Ui::AnimationPreview*    ui;
 
  public:
   explicit AnimationPreview(QWidget* parent = nullptr);

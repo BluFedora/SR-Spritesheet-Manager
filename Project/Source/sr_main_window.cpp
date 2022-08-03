@@ -280,7 +280,7 @@ void MainWindow::on_m_ActionExportSpritesheet_triggered()
 
 void MainWindow::on_m_ActionProjectRename_triggered()
 {
-  const QString new_name = QInputDialog::getText(this, tr("Rename Project"), "New Name");
+  const QString new_name = QInputDialog::getText(this, tr("Rename Project"), "New Name", QLineEdit::Normal, m_OpenProject->name());
 
   if (!new_name.isEmpty())
   {

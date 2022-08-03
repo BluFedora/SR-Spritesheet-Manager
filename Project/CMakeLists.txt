@@ -62,7 +62,7 @@ if(QT_FOUND)
       Qt${QT_VERSION_MAJOR}::Widgets
       Qt${QT_VERSION_MAJOR}::Network
       Qt${QT_VERSION_MAJOR}::OpenGLWidgets
-      bfAnimation2D_shared
+      BF_SpriteAnimation
   )
 
   set_target_properties(SRSpritesheetManager PROPERTIES

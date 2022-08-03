@@ -12,9 +12,7 @@
   </property>
   <property name="font">
    <font>
-    <family>Segoe UI</family>
     <pointsize>10</pointsize>
-    <weight>50</weight>
     <bold>false</bold>
    </font>
   </property>
@@ -93,9 +91,6 @@
      <horstretch>0</horstretch>
      <verstretch>0</verstretch>
     </sizepolicy>
-   </property>
-   <property name="features">
-    <set>QDockWidget::AllDockWidgetFeatures</set>
    </property>
    <property name="windowTitle">
     <string>Image Library</string>
@@ -182,9 +177,6 @@
      <verstretch>0</verstretch>
     </sizepolicy>
    </property>
-   <property name="features">
-    <set>QDockWidget::AllDockWidgetFeatures</set>
-   </property>
    <property name="windowTitle">
     <string>Animation List</string>
    </property>
@@ -255,14 +247,12 @@
      <x>0</x>
      <y>0</y>
      <width>1280</width>
-     <height>23</height>
+     <height>24</height>
     </rect>
    </property>
    <property name="font">
     <font>
-     <family>Segoe UI</family>
      <pointsize>10</pointsize>
-     <weight>50</weight>
      <italic>false</italic>
      <bold>false</bold>
      <underline>false</underline>
@@ -276,23 +266,6 @@
     <addaction name="m_ActionImportImages"/>
     <addaction name="m_ActionRemoveImages"/>
    </widget>
-   <widget class="QMenu" name="menuProject">
-    <property name="title">
-     <string>&amp;Spritesheet</string>
-    </property>
-    <property name="separatorsCollapsible">
-     <bool>true</bool>
-    </property>
-    <property name="toolTipsVisible">
-     <bool>false</bool>
-    </property>
-    <addaction name="m_ActionNewAnimation"/>
-    <addaction name="m_ActionProjectRename"/>
-    <addaction name="separator"/>
-    <addaction name="separator"/>
-    <addaction name="m_ActionProjectSave"/>
-    <addaction name="m_ActionExportSpritesheet"/>
-   </widget>
    <widget class="QMenu" name="menuAbout">
     <property name="title">
      <string>&amp;About</string>
@@ -303,7 +276,24 @@
     <addaction name="m_ActionShowWelcomeScreen"/>
     <addaction name="m_ActionAboutQt"/>
    </widget>
-   <addaction name="menuProject"/>
+   <widget class="QMenu" name="menuFile">
+    <property name="title">
+     <string>File</string>
+    </property>
+    <widget class="QMenu" name="menuNew">
+     <property name="title">
+      <string>New</string>
+     </property>
+     <addaction name="m_ActionNewAnimation"/>
+    </widget>
+    <addaction name="menuNew"/>
+    <addaction name="separator"/>
+    <addaction name="m_ActionProjectRename"/>
+    <addaction name="separator"/>
+    <addaction name="m_ActionProjectSave"/>
+    <addaction name="m_ActionExportSpritesheet"/>
+   </widget>
+   <addaction name="menuFile"/>
    <addaction name="menuImageLibrary"/>
    <addaction name="menuAbout"/>
   </widget>
@@ -316,9 +306,6 @@
    </property>
    <property name="acceptDrops">
     <bool>true</bool>
-   </property>
-   <property name="features">
-    <set>QDockWidget::AllDockWidgetFeatures</set>
    </property>
    <property name="windowTitle">
     <string>Timeline View</string>
@@ -542,9 +529,6 @@
      <verstretch>0</verstretch>
     </sizepolicy>
    </property>
-   <property name="features">
-    <set>QDockWidget::AllDockWidgetFeatures</set>
-   </property>
    <property name="windowTitle">
     <string>Property View</string>
    </property>
@@ -678,9 +662,6 @@
    </widget>
   </widget>
   <widget class="QDockWidget" name="m_DockHistoryView">
-   <property name="features">
-    <set>QDockWidget::AllDockWidgetFeatures</set>
-   </property>
    <property name="windowTitle">
     <string>History View</string>
    </property>
@@ -730,6 +711,7 @@
    <property name="font">
     <font>
      <pointsize>8</pointsize>
+     <bold>false</bold>
     </font>
    </property>
   </widget>
@@ -786,7 +768,7 @@
   </action>
   <action name="m_ActionNewAnimation">
    <property name="text">
-    <string>New Animation</string>
+    <string>Animation</string>
    </property>
    <property name="shortcut">
     <string>Ctrl+N</string>
@@ -814,6 +796,11 @@
   <action name="m_ActionRemoveImages">
    <property name="text">
     <string>Remove Images</string>
+   </property>
+  </action>
+  <action name="actionAimation">
+   <property name="text">
+    <string>Animation</string>
    </property>
   </action>
   <zorder>m_DockTimelineView</zorder>

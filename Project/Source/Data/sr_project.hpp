@@ -9,7 +9,6 @@
 #ifndef SRSM_PROJECT_HPP
 #define SRSM_PROJECT_HPP
 
-#include "bf/Animation2D.h"  // bfSpritesheet
 #include "sr_animation.hpp"  // Animation
 
 #include <QBuffer>      // QBuffer
@@ -28,11 +27,12 @@ class MainWindow;
 
 struct AtlasExport final
 {
-  QPixmap                      pixmap;            //!< For fast drawing.
-  QImage                       image;             //!< For fast manipulation.
-  std::unique_ptr<QBuffer>     atlas_data;        //!< For saving.
-  std::vector<QRect>           image_rectangles;  //!< For regenerating the the atlas.
-  QMap<QString, std::uint32_t> frame_to_index;    //!<
+  QPixmap                          pixmap;            //!< For fast drawing.
+  QImage                           image;             //!< For fast manipulation.
+  std::unique_ptr<unsigned char[]> atlas_data;        //!< For saving.
+  std::uint64_t                    atlas_data_size;   //!<
+  std::vector<QRect>               image_rectangles;  //!< For regenerating the the atlas.
+  QMap<QString, std::uint32_t>     frame_to_index;    //!<
 };
 
 using ProjectPtr = std::unique_ptr<Project>;

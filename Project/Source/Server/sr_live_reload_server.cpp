@@ -1,6 +1,8 @@
 #include "sr_live_reload_server.hpp"
 
+#if 0
 #include "bf/anim2D/bf_anim2D_network.h"  // bfAnim2DPacketHeader
+#endif
 
 LiveReloadServer::LiveReloadServer() :
   QObject(nullptr),
@@ -16,7 +18,7 @@ void LiveReloadServer::setup()
   QObject::connect(&m_Server, &QTcpServer::newConnection, [this]() {
     QTcpSocket *const client_socket = m_Server.nextPendingConnection();
 
-    //client_socket->waitForBytesWritten(-1);
+    // client_socket->waitForBytesWritten(-1);
 
     QObject::connect(client_socket, &QTcpSocket::disconnected, this, &LiveReloadServer::onClientDisconnect);
     QObject::connect(client_socket, &QTcpSocket::bytesWritten, this, &LiveReloadServer::onClientBytesSent);
@@ -36,6 +38,7 @@ void LiveReloadServer::sendTextureChangedPacket(const char *guid, const QImage &
     atlas_image.save(&buffer, "png");
     buffer.close();
 
+#if 0
     bfAnim2DPacketHeader header;
     const uint32_t       image_bytes_size = image_bytes.size();
 
@@ -51,6 +54,7 @@ void LiveReloadServer::sendTextureChangedPacket(const char *guid, const QImage &
       client->write((const char *)&image_bytes_size, sizeof(image_bytes_size));
       client->write(image_bytes.data(), image_bytes_size);
     }
+#endif
   }
 }
 
@@ -58,6 +62,7 @@ void LiveReloadServer::sendAnimChangedPacket(const char *guid, const QBuffer &sr
 {
   if (!m_Clients.isEmpty())
   {
+#if 0
     bfAnim2DPacketHeader header;
     const uint32_t       srsm_byte_buffer_size = srsm_byte_buffer.size();
 
@@ -73,6 +78,7 @@ void LiveReloadServer::sendAnimChangedPacket(const char *guid, const QBuffer &sr
       client->write((const char *)&srsm_byte_buffer_size, sizeof(srsm_byte_buffer_size));
       client->write(srsm_byte_buffer.data(), srsm_byte_buffer_size);
     }
+#endif
   }
 }
 

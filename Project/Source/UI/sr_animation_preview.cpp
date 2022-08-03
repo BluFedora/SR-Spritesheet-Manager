@@ -37,7 +37,6 @@ AnimationPreview::AnimationPreview(QWidget* parent) :
   m_SceneDocImage{":/Res/Images/Runtime/scene_docs.png"},
   m_CurrentAnim{nullptr},
   m_CurrentAnimIndex{-1},
-  m_AnimCtx{nullptr},
   m_Spritesheet{nullptr},
   m_AnimNewlySelected{false},
   m_IsPlayingAnimation{false},
@@ -46,12 +45,6 @@ AnimationPreview::AnimationPreview(QWidget* parent) :
   ui->setupUi(this);
 
   // setAcceptDrops(true);
-
-  // Setup The Animation Context
-
-  const bfAnim2DCreateParams create_anim_ctx = {nullptr, nullptr};
-
-  m_AnimCtx = bfAnim2D_new(&create_anim_ctx);
 
   // Setup OpenGL Rendering
 
@@ -97,7 +90,6 @@ AnimationPreview::AnimationPreview(QWidget* parent) :
 
 AnimationPreview::~AnimationPreview()
 {
-  bfAnim2D_delete(m_AnimCtx);
   setScene(nullptr);
   delete ui;
 }
@@ -270,14 +262,7 @@ void AnimationPreview::onAnimationChanged(Animation* anim)
 
 void AnimationPreview::onAtlasUpdated(AtlasExport& atlas)
 {
-  if (m_Spritesheet)
-  {
-    bfAnim2D_destroySpritesheet(m_AnimCtx, m_Spritesheet);
-  }
-
-  auto& atlas_buffer = atlas.atlas_data->buffer();
-
-  m_Spritesheet = bfAnim2D_loadSpritesheet(m_AnimCtx, bfStringSpan{"__INTERNAL__", 12}, (const uint8_t*)atlas_buffer.data(), atlas_buffer.size());
+  m_Spritesheet = (SpriteAnim::Spritesheet*)atlas.atlas_data.get();
   m_Atlas       = &atlas;
 
   if (m_CurrentAnim)
@@ -360,18 +345,17 @@ void AnimationPreview::mainUpdateLoop()
     const int   current_frame      = m_CurrentAnim->previewed_frame;
     const float current_frame_time = m_CurrentAnim->frameAt(current_frame)->frame_time;
 
-    bfAnim2DUpdateInfo anim_input;
+    SpriteAnim::SpriteAnimationUpdateInfo anim_input;
     anim_input.playback_speed      = 1.0f;
     anim_input.time_left_for_frame = current_frame_time - m_CurrentAnim->previewed_frame_time;
-    anim_input.animation           = m_CurrentAnimIndex;
     anim_input.spritesheet_idx     = 0;
+    anim_input.animation_idx       = m_CurrentAnimIndex;
     anim_input.current_frame       = current_frame;
     anim_input.is_looping          = true;
 
-    const bfSpritesheet* spritesheet = m_Spritesheet;
+    const SpriteAnim::Spritesheet* spritesheet[] = {m_Spritesheet};
 
-    bfAnim2D_stepFrame(&anim_input, &spritesheet, 1, k_DeltaTime);
-
+    SpriteAnimation_updateSprites(&anim_input, 1, spritesheet, k_DeltaTime);
     m_CurrentAnim->previewed_frame      = anim_input.current_frame;
     m_CurrentAnim->previewed_frame_time = m_CurrentAnim->frameAt(anim_input.current_frame)->frame_time - anim_input.time_left_for_frame;
 

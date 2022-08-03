@@ -38,7 +38,8 @@ Project::Project(MainWindow* main_window, const QString& name) :
   m_AtlasModified{false},
   m_IsRegeneratingAtlas{false}
 {
-  m_Export.atlas_data = std::make_unique<QBuffer>();
+  m_Export.atlas_data      = std::make_unique<unsigned char[]>(0);
+  m_Export.atlas_data_size = 0u;
 }
 
 void Project::newAnimation(const QString& name, int frame_rate)
@@ -275,9 +276,7 @@ bool Project::exportAtlas(const QString& dir_path)
 
   if (is_successful)
   {
-    QBuffer& buffer = *m_Export.atlas_data;
-
-    bytes_file.write(buffer.buffer());
+    bytes_file.write((const char*)m_Export.atlas_data.get(), m_Export.atlas_data_size);
     bytes_file.close();
   }
 
@@ -568,8 +567,6 @@ void Project::regenerateAtlasExport()
     painter.setRenderHint(QPainter::Antialiasing, true);
     painter.setRenderHint(QPainter::SmoothPixmapTransform, true);
 
-    m_Export.atlas_data = std::make_unique<QBuffer>();
-
     image_rects.clear();
     frame_rects.reserve(loaded_images_keys.size());
 
@@ -685,140 +682,84 @@ void Project::regenerateAtlasExport()
 
 void Project::regenerateAnimationExport()
 {
-  QBuffer&    byte_buffer = *m_Export.atlas_data;
-  const auto& image_rects = m_Export.image_rectangles;
-  const int   num_images  = int(image_rects.size());
-
-  byte_buffer.buffer().clear();
-  byte_buffer.open(QIODevice::WriteOnly);
-
-  // Write "SRSM" Header Chunk
-  {
-    const char          header_magic[4]     = {'S', 'R', 'S', 'M'};
-    const std::uint8_t  header_version      = 0;
-    const std::uint8_t  header_num_chunks   = 3;
-    const std::uint16_t header_atlas_width  = m_Export.image.width();
-    const std::uint16_t header_atlas_height = m_Export.image.height();
-    const std::uint16_t data_offset         = sizeof(header_magic) +
-                                      sizeof(data_offset) +
-                                      sizeof(header_version) +
-                                      sizeof(header_num_chunks) +
-                                      sizeof(header_atlas_width) +
-                                      sizeof(header_atlas_height);
-
-    byte_buffer.write((const char*)header_magic, sizeof(header_magic));
-    byte_buffer.write((const char*)&data_offset, sizeof(data_offset));
-    byte_buffer.write((const char*)&header_version, sizeof(header_version));
-    byte_buffer.write((const char*)&header_num_chunks, sizeof(header_num_chunks));
-    byte_buffer.write((const char*)&header_atlas_width, sizeof(header_atlas_width));
-    byte_buffer.write((const char*)&header_atlas_height, sizeof(header_atlas_height));
-  }
-
-  // Write "FRME" Chunk
-  {
-    const std::uint32_t frme_chunk_num_frames = std::uint32_t(num_images);
-    const std::uint32_t frme_chunk_size       = sizeof(frme_chunk_num_frames) + frme_chunk_num_frames * (sizeof(std::uint32_t) * 4);
-
-    byte_buffer.write("FRME", 4);
-    byte_buffer.write((const char*)&frme_chunk_size, sizeof(frme_chunk_size));
-    byte_buffer.write((const char*)&frme_chunk_num_frames, sizeof(frme_chunk_num_frames));
-
-    for (std::uint32_t i = 0; i < frme_chunk_num_frames; ++i)
-    {
-      const QRect& img_rect = image_rects[i];
-
-      const uint32_t x = img_rect.x();
-      const uint32_t y = img_rect.y();
-      const uint32_t w = img_rect.width();
-      const uint32_t h = img_rect.height();
-
-      byte_buffer.write((const char*)&x, sizeof(x));
-      byte_buffer.write((const char*)&y, sizeof(y));
-      byte_buffer.write((const char*)&w, sizeof(w));
-      byte_buffer.write((const char*)&h, sizeof(h));
-    }
-  }
-
-  // Write "ANIM" Chunk
-  {
-    const std::uint32_t num_animations  = std::uint32_t(m_AnimationList.rowCount());
-    std::uint32_t       anim_chunk_size = sizeof(num_animations);
-
-    for (std::uint32_t i = 0; i < num_animations; ++i)
-    {
-      Animation* const    animation      = animationAt(i);
-      const QString       animation_name = animation->name();
-      const auto          anim_name_8bit = animation_name.toLocal8Bit();
-      const std::uint32_t name_length    = std::uint32_t(animation_name.length());
-      const std::uint32_t num_frames     = animation->numFrames();
-
-      anim_chunk_size += sizeof(name_length) + name_length + 1;  // +1 for Nul terminator.
-      anim_chunk_size += sizeof(num_frames) + num_frames * (sizeof(std::uint32_t) + sizeof(float));
-    }
-
-    byte_buffer.write("ANIM", 4);
-    byte_buffer.write((const char*)&anim_chunk_size, sizeof(anim_chunk_size));
-    byte_buffer.write((const char*)&num_animations, sizeof(num_animations));
-
-    for (std::uint32_t i = 0; i < num_animations; ++i)
-    {
-      Animation* const animation      = animationAt(i);
-      const QString    animation_name = animation->name();
-      const auto       anim_name_8bit = animation_name.toLocal8Bit();
-
-      const std::uint32_t name_length = std::uint32_t(animation_name.length());
-
-      byte_buffer.write((const char*)&name_length, sizeof(name_length));
-
-      byte_buffer.write(anim_name_8bit.data(), name_length);
-      byte_buffer.write("\0", 1);
-
-      const std::uint32_t num_frames = animation->numFrames();
-
-      byte_buffer.write((const char*)&num_frames, sizeof(num_frames));
-
-      for (std::uint32_t j = 0; j < num_frames; ++j)
-      {
-        AnimationFrameInstance* const frame       = animation->frameAt(j);
-        const std::uint32_t           frame_index = m_Export.frame_to_index[frame->full_path()];
-        const float                   frame_time  = frame->frame_time;
-
-        byte_buffer.write((const char*)&frame_index, sizeof(frame_index));
-        byte_buffer.write((const char*)&frame_time, sizeof(frame_time));
-      }
-    }
-  }
+  const auto&         image_rects    = m_Export.image_rectangles;
+  const std::uint32_t num_animations = std::uint32_t(m_AnimationList.rowCount());
+  const std::uint32_t num_uv_frames  = std::uint32_t(image_rects.size());
 
   if (m_EditUUID.isNull())
   {
     m_EditUUID = QUuid::createUuid();
   }
 
-  const QString    guid_str  = m_EditUUID.toString(QUuid::WithoutBraces);
-  const QByteArray guid_cstr = guid_str.toLocal8Bit();
+  SpriteAnim::SpritesheetDataSizeCalculator data_size = {};
 
-  // Write "EDIT" Chunk
+  for (std::uint32_t i = 0; i < num_animations; ++i)
   {
-    const std::uint32_t edit_chunk_size = guid_cstr.length() + 1;
+    Animation* const    animation      = animationAt(i);
+    const QString       animation_name = animation->name();
+    const auto          anim_name_8bit = animation_name.toLocal8Bit();
+    const std::uint32_t name_length    = std::uint32_t(animation_name.length());
 
-    byte_buffer.write("EDIT", 4);
-    byte_buffer.write((const char*)&edit_chunk_size, sizeof(edit_chunk_size));
-    byte_buffer.write(guid_cstr, edit_chunk_size);
+    data_size.addAnimation(name_length, animation->numFrames());
   }
 
-  // Write "FOOT" Chunk
+  for (std::uint32_t i = 0; i < num_uv_frames; ++i)
   {
-    const std::uint32_t foot_chunk_size = 0;
-
-    byte_buffer.write("FOOT", 4);
-    byte_buffer.write((const char*)&foot_chunk_size, sizeof(foot_chunk_size));
+    data_size.addUVFrame();
   }
 
-  byte_buffer.close();
+  const std::uint64_t spritesheet_chunk_size = SpriteAnim::Spritesheet::calcTotalSize(data_size);
+
+  m_Export.atlas_data      = std::make_unique<unsigned char[]>(spritesheet_chunk_size);
+  m_Export.atlas_data_size = spritesheet_chunk_size;
+
+  static_assert(sizeof(m_EditUUID) == sizeof(uuid128), "");
+  SpriteAnim::Spritesheet* const spritesheet = SpriteAnim::writeSpritesheet(
+   m_Export.atlas_data.get(),
+   *(const uuid128*)&m_EditUUID,
+   m_Export.image.width(),
+   m_Export.image.height(),
+   data_size,
+   [&](SpriteAnim::SpriteAnimation* dst_anim, std::uint32_t index, auto&& allocFrame) {
+     Animation* const    animation  = animationAt(index);
+     const std::uint32_t num_frames = animation->numFrames();
+
+     for (std::uint32_t j = 0; j < num_frames; ++j)
+     {
+       AnimationFrameInstance* const           src_frame = animation->frameAt(j);
+       SpriteAnim::SpriteAnimationFrame* const dst_frame = allocFrame();
+
+       dst_frame->frame_index = m_Export.frame_to_index[src_frame->full_path()];
+       dst_frame->frame_time  = src_frame->frame_time;
+     }
+   },
+   [&](SpriteAnim::SpriteAnimation* dst_anim, std::uint32_t index, auto&& allocStr) {
+     Animation* const animation      = animationAt(index);
+     const QString    animation_name = animation->name();
+     const auto       anim_name_8bit = animation_name.toLocal8Bit();
+
+     allocStr(dst_anim->name, anim_name_8bit.data(), anim_name_8bit.length());
+   },
+   [&](rect2f* dst_uv_frame, std::uint32_t index) {
+     const QRect& img_rect = image_rects[index];
+
+     const uint32_t x = img_rect.x();
+     const uint32_t y = img_rect.y();
+     const uint32_t w = img_rect.width();
+     const uint32_t h = img_rect.height();
+
+     dst_uv_frame->min.x = float32(x) / float32(m_Export.image.width());
+     dst_uv_frame->min.y = float32(y) / float32(m_Export.image.height());
+     dst_uv_frame->max.x = float32(x + 1.0f) / float32(m_Export.image.width());
+     dst_uv_frame->max.y = float32(y + 1.0f) / float32(m_Export.image.height());
+   });
 
   if (g_Server)
   {
-    g_Server->sendAnimChangedPacket(guid_cstr.data(), byte_buffer);
+    // const QString    guid_str  = m_EditUUID.toString(QUuid::WithoutBraces);
+    // const QByteArray guid_cstr = guid_str.toLocal8Bit();
+
+    //  g_Server->sendAnimChangedPacket(guid_cstr.data(), QBuffer());
   }
 
   notifyAnimationChanged(m_SelectedAnimation != -1 ? animationAt(m_SelectedAnimation) : nullptr);
