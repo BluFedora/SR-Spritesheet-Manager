@@ -355,7 +355,7 @@ void AnimationPreview::mainUpdateLoop()
 
     const SpriteAnim::Spritesheet* spritesheet[] = {m_Spritesheet};
 
-    SpriteAnimation_updateSprites(&anim_input, 1, spritesheet, k_DeltaTime);
+    SpriteAnim_UpdateSprites(&anim_input, 1, spritesheet, k_DeltaTime);
     m_CurrentAnim->previewed_frame      = anim_input.current_frame;
     m_CurrentAnim->previewed_frame_time = m_CurrentAnim->frameAt(anim_input.current_frame)->frame_time - anim_input.time_left_for_frame;
 

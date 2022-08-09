@@ -11,9 +11,7 @@
 
 #include "sr_animated_sprite.hpp"  // AnimatedSprite
 
-// #include "bf/Animation2D.h"
-
-#include "sprite_anim/bf_sprite_animation.hpp"
+#include "sprite_anim/bf_sprite_animation.hpp"  // SpriteAnim::Spritesheet
 
 #include <QGraphicsView>
 #include <QTimer>
