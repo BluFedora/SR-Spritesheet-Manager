@@ -714,45 +714,58 @@ void Project::regenerateAnimationExport()
   m_Export.atlas_data_size = spritesheet_chunk_size;
 
   static_assert(sizeof(m_EditUUID) == sizeof(uuid128), "");
-  SpriteAnim::Spritesheet* const spritesheet = SpriteAnim::writeSpritesheet(
-   m_Export.atlas_data.get(),
-   *(const uuid128*)&m_EditUUID,
-   m_Export.image.width(),
-   m_Export.image.height(),
-   data_size,
-   [&](SpriteAnim::SpriteAnimation* dst_anim, std::uint32_t index, auto&& allocFrame) {
-     Animation* const    animation  = animationAt(index);
-     const std::uint32_t num_frames = animation->numFrames();
 
-     for (std::uint32_t j = 0; j < num_frames; ++j)
-     {
-       AnimationFrameInstance* const           src_frame = animation->frameAt(j);
-       SpriteAnim::SpriteAnimationFrame* const dst_frame = allocFrame();
+  SpriteAnim::SpritesheetBuilder spritesheet_builder =
+   {
+    m_Export.atlas_data.get(),
+    *(const uuid128*)&m_EditUUID,
+    std::uint16_t(m_Export.image.width()),
+    std::uint16_t(m_Export.image.height()),
+    data_size,
+   };
 
-       dst_frame->frame_index = m_Export.frame_to_index[src_frame->full_path()];
-       dst_frame->frame_time  = src_frame->frame_time;
-     }
-   },
-   [&](SpriteAnim::SpriteAnimation* dst_anim, std::uint32_t index, auto&& allocStr) {
-     Animation* const animation      = animationAt(index);
-     const QString    animation_name = animation->name();
-     const auto       anim_name_8bit = animation_name.toLocal8Bit();
+  for (std::uint32_t i = 0; i < num_animations; ++i)
+  {
+    Animation* const    animation      = animationAt(i);
+    const QByteArray    animation_name = animation->name().toLocal8Bit();
+    const std::uint32_t num_frames     = animation->numFrames();
 
-     allocStr(dst_anim->name, anim_name_8bit.data(), anim_name_8bit.length());
-   },
-   [&](rect2f* dst_uv_frame, std::uint32_t index) {
-     const QRect& img_rect = image_rects[index];
+    auto animation_builder = spritesheet_builder.addAnimation(
+     string_range{animation_name.data(), std::size_t(animation_name.size())},
+     num_frames);
 
-     const uint32_t x = img_rect.x();
-     const uint32_t y = img_rect.y();
-     const uint32_t w = img_rect.width();
-     const uint32_t h = img_rect.height();
+    for (std::uint32_t j = 0; j < num_frames; ++j)
+    {
+      AnimationFrameInstance* const src_frame = animation->frameAt(j);
 
-     dst_uv_frame->min.x = float32(x) / float32(m_Export.image.width());
-     dst_uv_frame->min.y = float32(y) / float32(m_Export.image.height());
-     dst_uv_frame->max.x = float32(x + 1.0f) / float32(m_Export.image.width());
-     dst_uv_frame->max.y = float32(y + 1.0f) / float32(m_Export.image.height());
-   });
+      animation_builder.addFrame(
+       m_Export.frame_to_index[src_frame->full_path()],
+       src_frame->frame_time);
+    }
+  }
+
+  const float32 image_width_f  = float32(m_Export.image.width());
+  const float32 image_height_f = float32(m_Export.image.height());
+
+  for (std::uint32_t i = 0; i < num_uv_frames; ++i)
+  {
+    const QRect& img_rect = image_rects[i];
+
+    const uint32_t x = img_rect.x();
+    const uint32_t y = img_rect.y();
+    const uint32_t w = img_rect.width();
+    const uint32_t h = img_rect.height();
+
+    rect2f dst_uv_frame;
+    dst_uv_frame.min.x = float32(x + 0.0f) / image_width_f;
+    dst_uv_frame.min.y = float32(y + 0.0f) / image_height_f;
+    dst_uv_frame.max.x = float32(x + 1.0f) / image_width_f;
+    dst_uv_frame.max.y = float32(y + 1.0f) / image_height_f;
+
+    spritesheet_builder.addUVFrames(&dst_uv_frame, 1u);
+  }
+
+  SpriteAnim::Spritesheet* const spritesheet = spritesheet_builder.end();
 
   if (g_Server && m_SelectedAnimation != -1)
   {
