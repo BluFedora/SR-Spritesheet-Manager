@@ -14,6 +14,8 @@
 #include "Data/sr_project.hpp"
 #include "UI/sr_image_library.hpp"
 
+#include "sprite_anim_playback.hpp"
+
 #include <QDragEnterEvent>
 #include <QGraphicsTextItem>
 #include <QListView>
@@ -345,17 +347,16 @@ void AnimationPreview::mainUpdateLoop()
     const int   current_frame      = m_CurrentAnim->previewed_frame;
     const float current_frame_time = m_CurrentAnim->frameAt(current_frame)->frame_time;
 
-    SpriteAnim::SpriteAnimationUpdateInfo anim_input;
+    SpriteAnimationState anim_input;
     anim_input.playback_speed      = 1.0f;
     anim_input.time_left_for_frame = current_frame_time - m_CurrentAnim->previewed_frame_time;
-    anim_input.spritesheet_idx     = 0;
-    anim_input.animation_idx       = m_CurrentAnimIndex;
+    anim_input.animation_idx       = 0;
     anim_input.current_frame       = current_frame;
     anim_input.is_looping          = true;
 
-    const SpriteAnim::Spritesheet* spritesheet[] = {m_Spritesheet};
+    const SpriteAnimation* animations[] = {(SpriteAnimation*)&m_Spritesheet->animations[m_CurrentAnimIndex]};
 
-    SpriteAnim_UpdateSprites(&anim_input, 1, spritesheet, k_DeltaTime);
+    SpriteAnimationStepFrame({&anim_input, 1}, animations, k_DeltaTime);
     m_CurrentAnim->previewed_frame      = anim_input.current_frame;
     m_CurrentAnim->previewed_frame_time = m_CurrentAnim->frameAt(anim_input.current_frame)->frame_time - anim_input.time_left_for_frame;
 

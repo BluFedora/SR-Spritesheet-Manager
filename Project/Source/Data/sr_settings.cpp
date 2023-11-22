@@ -22,6 +22,9 @@ static std::vector<RecentFileEntry> s_RecentFiles = {};
 void Settings::openRecentFiles()
 {
   Settings settings;
+
+  qDebug() << "Loading settings from: " << settings.fileName() << "\n";
+
   settings.beginGroup("WelcomeWindow");
 
   const int num_items = settings.beginReadArray("RecentFiles");
@@ -77,6 +80,6 @@ void Settings::saveRecentFile()
 }
 
 Settings::Settings() :
-  QSettings(k_OrganizationName, k_ApplicationName)
+  QSettings(QSettings::IniFormat /* Using the windows registry is bad when upgrading Qt versions. */, QSettings::UserScope, k_OrganizationName, k_ApplicationName, nullptr)
 {
 }

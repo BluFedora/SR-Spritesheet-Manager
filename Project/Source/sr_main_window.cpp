@@ -215,6 +215,7 @@ void MainWindow::closeEvent(QCloseEvent* event)
 
   settings.setValue("MainWindow/geometry", saveGeometry());
   settings.setValue("MainWindow/windowState", saveState());
+  settings.setValue("MainWindow/isMaximized", isMaximized());
 
   if (isWindowModified())
   {
@@ -255,8 +256,15 @@ void MainWindow::restoreWindowLayout()
 {
   Settings settings;
 
-  restoreGeometry(settings.value("MainWindow/geometry").toByteArray());
   restoreState(settings.value("MainWindow/windowState").toByteArray());
+  if (settings.value("MainWindow/isMaximized").toBool())
+  {
+    setWindowState(Qt::WindowMaximized);
+  }
+  else
+  {
+    restoreGeometry(settings.value("MainWindow/geometry").toByteArray());
+  }
 
   restoreDockWidget(m_DockImageLibraryView);
   restoreDockWidget(m_DockTimelineView);
