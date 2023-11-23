@@ -310,9 +310,7 @@ void ImageLibrary::addDirectory(QStringList& files, bool emit_signal)
   QCollator collator;
   collator.setNumericMode(true);
 
-  std::sort(files.begin(), files.end(), [&collator](const QString& file1, const QString& file2) -> bool {
-    return collator.compare(file1, file2) < 0;
-  });
+  std::sort(files.begin(), files.end(), collator);
 
   for (const auto& file : files)
   {
