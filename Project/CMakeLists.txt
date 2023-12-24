@@ -14,6 +14,9 @@ if(QT_FOUND)
   qt_add_executable(
     SRSpritesheetManager
       MANUAL_FINALIZATION
+
+      "Source/UI/image_library_model.hpp"
+
       "Source/Data/bf_property.hpp"
       "Source/Data/sr_animation.hpp"
       "Source/Data/sr_project.hpp"
@@ -30,6 +33,7 @@ if(QT_FOUND)
       "Source/Data/sr_animation.cpp"
       "Source/Data/sr_project.cpp"
       "Source/Data/sr_settings.cpp"
+
       "Source/Server/sr_live_reload_server.cpp"
       "Source/UI/sr_animated_sprite.cpp"
       "Source/UI/sr_animation_preview.cpp"
@@ -64,6 +68,7 @@ if(QT_FOUND)
       Qt${QT_VERSION_MAJOR}::OpenGLWidgets
       BF_SpriteAnimation
       SpriteAnimation_Runtime
+      SpriteAnimation_Tooling
   )
 
   set_target_properties(SRSpritesheetManager PROPERTIES

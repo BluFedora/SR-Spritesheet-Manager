@@ -252,7 +252,7 @@ QJsonObject ImageLibrary::serializeImpl(Project& project, QTreeWidgetItem* item)
   else
   {
     const QDir&   dir      = project.projectFolder();
-    const QString abs_path = item->data(0, Qt::UserRole).toString();
+    const QString abs_path = item->data(0, AbsolutePath).toString();
 
     QFileInfo fi{abs_path};
 

@@ -557,8 +557,8 @@ void Project::regenerateAtlasExport()
     progress.setWindowModality(Qt::ApplicationModal);
     progress.setMinimumDuration(0);
 
-    // TODO(Shareef): THE MAX SIZE OF QImage is '32767'x'32767'. This is buggy....
-    // [https://doc.qt.io/archives/qt-4.8/qpainter.html#limitations]
+    // TODO(Shareef): THE MAX SIZE OF QPixmap is '32767'x'32767'. This is buggy....
+    // [https://doc.qt.io/qt-6/qpainter.html#limitations]
 
     QImage atlas_image((int)atlas_width, (int)atlas_height, QImage::Format_ARGB32);
     atlas_image.fill(0x00000000);
