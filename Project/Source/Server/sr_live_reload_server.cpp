@@ -117,7 +117,7 @@ void LiveReloadServer::sendAtlasTextureChanged(const QUuid &spritesheet, const Q
 
     writeEventHeader(event);
 
-    assetio::rel_array32<char> texture_data = {};
+    binaryIO::rel_array32<char> texture_data = {};
     texture_data.elements.offset            = sizeof(texture_data) +
                                    sizeof(std::uint16_t) +
                                    sizeof(std::uint16_t);
