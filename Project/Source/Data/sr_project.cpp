@@ -756,7 +756,7 @@ void Project::regenerateAnimationExport()
     const uint32_t w = img_rect.width();
     const uint32_t h = img_rect.height();
 
-    rect2f dst_uv_frame;
+    region2Df dst_uv_frame;
     dst_uv_frame.min.x = float32(x + 0.0f) / image_width_f;
     dst_uv_frame.min.y = float32(y + 0.0f) / image_height_f;
     dst_uv_frame.max.x = float32(x + 1.0f) / image_width_f;
