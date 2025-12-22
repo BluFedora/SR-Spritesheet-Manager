@@ -4,7 +4,7 @@
 
 #include <QUuid>  // QUuid
 
-#include "containers/tagged_union.hpp"
+#include "core/tagged_union.hpp"
 
 #include <QPixmap>
 
